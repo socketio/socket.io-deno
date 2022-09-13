@@ -23,7 +23,7 @@ export class WS extends Transport {
     }
   }
 
-  public onRequest(req: Request, responseHeaders: Headers): Promise<Response> {
+  public onRequest(req: Request): Promise<Response> {
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     this.socket = socket;
@@ -56,9 +56,7 @@ export class WS extends Transport {
       this.onClose();
     };
 
-    responseHeaders.forEach((value, key) => {
-      response.headers.set(key, value);
-    });
+    // note: response.headers is immutable, so it seems we can't add headers here
 
     return Promise.resolve(response);
   }

@@ -214,7 +214,7 @@ export class Server extends EventEmitter<never, never, ServerReservedEvents> {
       if (req.headers.has("upgrade")) {
         const transport = new WS(this.opts);
 
-        const promise = transport.onRequest(req, responseHeaders);
+        const promise = transport.onRequest(req);
 
         socket._maybeUpgrade(transport);
 

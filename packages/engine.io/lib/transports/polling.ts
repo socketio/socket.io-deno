@@ -149,7 +149,8 @@ export class Polling extends Transport {
       getLogger("engine.io").debug(
         "[polling] transport writable - closing right away",
       );
-      this.send([{ type: "close" }]);
+      // if we have received a "close" packet from the client, then we can just send a "noop" packet back
+      this.send([{ type: this.readyState === "closing" ? "close" : "noop" }]);
     }
 
     this.onClose();

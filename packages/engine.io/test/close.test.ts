@@ -157,19 +157,24 @@ describe("close", () => {
 
       const sid = await parseSessionID(response);
 
-      const dataResponse = await fetch(
-        `http://localhost:${port}/engine.io/?EIO=4&transport=polling&sid=${sid}`,
-        {
-          method: "post",
-          body: "1",
-        },
-      );
+      const [pollResponse, dataResponse] = await Promise.all([
+        fetch(
+          `http://localhost:${port}/engine.io/?EIO=4&transport=polling&sid=${sid}`,
+        ),
+        fetch(
+          `http://localhost:${port}/engine.io/?EIO=4&transport=polling&sid=${sid}`,
+          {
+            method: "post",
+            body: "1",
+          },
+        ),
+      ]);
+
+      assertEquals(pollResponse.status, 200);
+      assertEquals(await pollResponse.text(), "6");
 
       assertEquals(dataResponse.status, 200);
-
-      const body = await dataResponse.text();
-
-      assertEquals(body, "OK");
+      assertEquals(await dataResponse.text(), "OK");
 
       partialDone();
     });

@@ -252,13 +252,31 @@ export class Server extends EventEmitter<never, never, ServerReservedEvents> {
 
     const sid = url.searchParams.get("sid");
     if (sid) {
-      if (!this.clients.has(sid)) {
+      const client = this.clients.get(sid);
+      if (!client) {
+        getLogger("engine.io").debug(`[server] unknown client with sid ${sid}`);
         return Promise.reject({
           code: ERROR_CODES.UNKNOWN_SID,
           context: {
             sid,
           },
         });
+      }
+      const previousTransport = client.transport.name;
+      if (!req.headers.has("upgrade") && previousTransport !== transport) {
+        getLogger("engine.io").debug(
+          "[server] unexpected transport without upgrade",
+        );
+        return Promise.reject(
+          {
+            code: ERROR_CODES.BAD_REQUEST,
+            context: {
+              name: "TRANSPORT_MISMATCH",
+              transport,
+              previousTransport,
+            },
+          },
+        );
       }
     } else {
       // handshake is GET only

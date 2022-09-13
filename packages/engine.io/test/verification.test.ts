@@ -238,4 +238,44 @@ describe("verification", () => {
       },
     );
   });
+
+  it("should disallow invalid transport", () => {
+    const engine = new Server();
+
+    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+      engine.on("connection_error", (err) => {
+        assertExists(err.req);
+        assertEquals(err.code, 3);
+        assertEquals(err.message, "Bad request");
+        assertEquals(err.context.name, "TRANSPORT_MISMATCH");
+        assertEquals(err.context.transport, "polling");
+        assertEquals(err.context.previousTransport, "websocket");
+
+        partialDone();
+      });
+
+      const socket = new WebSocket(
+        `ws://localhost:${port}/engine.io/?EIO=4&transport=websocket`,
+      );
+
+      socket.onmessage = async ({ data }) => {
+        const handshake = JSON.parse(data.substring(1));
+
+        const response = await fetch(
+          `http://localhost:${port}/engine.io/?EIO=3&transport=polling&sid=${handshake.sid}`,
+          {
+            method: "get",
+          },
+        );
+
+        assertEquals(response.status, 400);
+
+        const body = await response.json();
+        assertEquals(body.code, 3);
+        assertEquals(body.message, "Bad request");
+
+        partialDone();
+      };
+    });
+  });
 });

@@ -285,15 +285,13 @@ export class Socket<
    * @private
    */
   private ack(id: number): () => void {
-    const self = this;
     let sent = false;
-    return function () {
+    return (...args) => {
       // prevent double callbacks
       if (sent) return;
-      const args = Array.prototype.slice.call(arguments);
       getLogger("socket.io").debug(`[socket] sending ack ${id}`);
 
-      self.packet({
+      this.packet({
         id: id,
         type: PacketType.ACK,
         data: args,

@@ -27,5 +27,8 @@ jobs:
       - name: Check format
         run: deno fmt --check
 
+      - name: Lint source files
+        run: deno lint
+
       - name: Run tests
         run: deno test --allow-net

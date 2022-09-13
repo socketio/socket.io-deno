@@ -1,3 +1,5 @@
+// deno-lint-ignore-file
+
 import { type RawData } from "../engine.io-parser/mod.ts";
 import { EventEmitter } from "../event-emitter/mod.ts";
 import { getLogger } from "../../deps.ts";

@@ -278,4 +278,24 @@ describe("verification", () => {
       };
     });
   });
+
+  it("should disallow duplicate WebSocket connections", () => {
+    const engine = new Server();
+
+    return testServeWithAsyncResults(engine, 1, (port, done) => {
+      const socket = new WebSocket(
+        `ws://localhost:${port}/engine.io/?EIO=4&transport=websocket`,
+      );
+
+      socket.onmessage = ({ data }) => {
+        const handshake = JSON.parse(data.substring(1));
+
+        const socket = new WebSocket(
+          `ws://localhost:${port}/engine.io/?EIO=4&transport=websocket&sid=${handshake.sid}`,
+        );
+
+        socket.onclose = done;
+      };
+    });
+  });
 });

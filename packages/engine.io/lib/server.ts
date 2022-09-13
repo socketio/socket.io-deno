@@ -211,7 +211,7 @@ export class Server extends EventEmitter<never, never, ServerReservedEvents> {
       // the client must exist since we have checked it in the verify method
       const socket = this.clients.get(sid)!;
 
-      if (url.searchParams.get("transport") === "websocket") {
+      if (req.headers.has("upgrade")) {
         const transport = new WS(this.opts);
 
         const promise = transport.onRequest(req, responseHeaders);
@@ -263,7 +263,7 @@ export class Server extends EventEmitter<never, never, ServerReservedEvents> {
         });
       }
       const previousTransport = client.transport.name;
-      if (!req.headers.has("upgrade") && previousTransport !== transport) {
+      if (previousTransport === "websocket") {
         getLogger("engine.io").debug(
           "[server] unexpected transport without upgrade",
         );

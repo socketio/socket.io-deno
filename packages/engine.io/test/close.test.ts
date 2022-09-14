@@ -174,7 +174,7 @@ describe("close", () => {
       assertEquals(await pollResponse.text(), "6");
 
       assertEquals(dataResponse.status, 200);
-      assertEquals(await dataResponse.text(), "OK");
+      assertEquals(await dataResponse.text(), "ok");
 
       partialDone();
     });
@@ -262,7 +262,7 @@ describe("close", () => {
 
       const body = await dataResponse.text();
 
-      assertEquals(body, "OK");
+      assertEquals(body, "ok");
 
       partialDone();
     });

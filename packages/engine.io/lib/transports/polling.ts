@@ -104,7 +104,7 @@ export class Polling extends Transport {
     }
 
     return Promise.resolve(
-      new Response("OK", {
+      new Response("ok", {
         status: 200,
         headers: responseHeaders,
       }),

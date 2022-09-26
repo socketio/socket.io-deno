@@ -226,6 +226,75 @@ export class Socket<
   }
 
   /**
+   * Targets a room when broadcasting.
+   *
+   * ```
+   * io.on("connection", (socket) => {
+   *     // the “foo” event will be broadcast to all connected clients in the “room-101” room, except this socket
+   *     socket.to("room-101").emit("foo", "bar");
+   *
+   *     // the code above is equivalent to:
+   *     io.to("room-101").except(socket.id).emit("foo", "bar");
+   *
+   *     // with an array of rooms (a client will be notified at most once)
+   *     socket.to(["room-101", "room-102"]).emit("foo", "bar");
+   *
+   *     // with multiple chained calls
+   *     socket.to("room-101").to("room-102").emit("foo", "bar");
+   * });
+   * ```
+   *
+   * @param room - a room, or an array of rooms
+   * @return self
+   */
+  public to(room: Room | Room[]): BroadcastOperator<EmitEvents, SocketData> {
+    return this.newBroadcastOperator().to(room);
+  }
+
+  /**
+   * Targets a room when broadcasting. Similar to `to()`, but might feel clearer in some cases:
+   *
+   * ```
+   * io.on("connection", (socket) => {
+   *     // disconnect all clients in the "room-101" room, except this socket
+   *     socket.in("room-101").disconnectSockets();
+   * });
+   * ```
+   *
+   * @param room - a room, or an array of rooms
+   * @return self
+   */
+  public in(room: Room | Room[]): BroadcastOperator<EmitEvents, SocketData> {
+    return this.newBroadcastOperator().in(room);
+  }
+
+  /**
+   * Excludes a room when broadcasting.
+   *
+   * ```
+   * io.on("connection", (socket) => {
+   *     // the "foo" event will be broadcast to all connected clients, except the ones that are in the "room-101" room
+   *     // and this socket
+   *     socket.except("room-101").emit("foo", "bar");
+   *
+   *     // with an array of rooms
+   *     socket.except(["room-101", "room-102"]).emit("foo", "bar");
+   *
+   *     // with multiple chained calls
+   *     socket.except("room-101").except("room-102").emit("foo", "bar");
+   * });
+   * ```
+   *
+   * @param room - a room, or an array of rooms
+   * @return self
+   */
+  public except(
+    room: Room | Room[],
+  ): BroadcastOperator<EmitEvents, SocketData> {
+    return this.newBroadcastOperator().except(room);
+  }
+
+  /**
    * @param packet
    */
   /* private */ _onpacket(packet: Packet) {

@@ -1,6 +1,7 @@
 import { Server } from "../lib/server.ts";
 import * as log from "../../../test_deps.ts";
 import { serve } from "../../../test_deps.ts";
+import { EventEmitter, EventsMap } from "../../event-emitter/mod.ts";
 
 function createPartialDone(
   count: number,
@@ -110,5 +111,14 @@ export function enableLogs() {
         handlers: ["console"],
       },
     },
+  });
+}
+
+export function waitFor<T>(
+  emitter: EventEmitter<EventsMap, EventsMap>,
+  event: string,
+): Promise<T> {
+  return new Promise((resolve) => {
+    emitter.once(event, resolve);
   });
 }

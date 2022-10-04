@@ -513,14 +513,14 @@ export interface RedisCommands {
   pfmerge(destkey: string, ...sourcekeys: string[]): Promise<SimpleString>;
 
   // PubSub
-  psubscribe<TMessage extends string | string[] = string>(
+  psubscribe<TMessage extends string | string[] | Uint8Array = string>(
     ...patterns: string[]
   ): Promise<RedisSubscription<TMessage>>;
   pubsubChannels(pattern?: string): Promise<BulkString[]>;
   pubsubNumsub(...channels: string[]): Promise<(BulkString | Integer)[]>;
   pubsubNumpat(): Promise<Integer>;
   publish(channel: string, message: RedisValue): Promise<Integer>;
-  subscribe<TMessage extends string | string[] = string>(
+  subscribe<TMessage extends string | string[] | Uint8Array = string>(
     ...channels: string[]
   ): Promise<RedisSubscription<TMessage>>;
 

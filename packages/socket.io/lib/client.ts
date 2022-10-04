@@ -69,7 +69,6 @@ export class Client<
         );
         this.close();
       }
-      // @ts-ignore FIXME
     }, this.server.opts.connectTimeout);
   }
 

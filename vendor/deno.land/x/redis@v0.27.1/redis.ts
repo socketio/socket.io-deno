@@ -1151,13 +1151,13 @@ class RedisImpl implements Redis {
     return this.execIntegerReply("PUBLISH", channel, message);
   }
 
-  subscribe<TMessage extends string | string[] = string>(
+  subscribe<TMessage extends string | string[] | Uint8Array = string>(
     ...channels: string[]
   ) {
     return subscribe<TMessage>(this.executor, ...channels);
   }
 
-  psubscribe<TMessage extends string | string[] = string>(
+  psubscribe<TMessage extends string | string[] | Uint8Array = string>(
     ...patterns: string[]
   ) {
     return psubscribe<TMessage>(this.executor, ...patterns);
@@ -1177,7 +1177,7 @@ class RedisImpl implements Redis {
   pubsubNumsub(...channels: string[]) {
     return this.execArrayReply<BulkString | Integer>(
       "PUBSUB",
-      "NUMSUBS",
+      "NUMSUB",
       ...channels,
     );
   }

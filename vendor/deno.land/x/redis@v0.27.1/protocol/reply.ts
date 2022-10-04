@@ -242,7 +242,7 @@ export async function readArrayReplyBody(
       }
       case BulkReplyCode: {
         const reply = await BulkReply.decode(reader);
-        array.push(reply.bulk());
+        array.push(i === argCount - 1 ? reply.buffer() : reply.bulk());
         break;
       }
       case IntegerReplyCode: {

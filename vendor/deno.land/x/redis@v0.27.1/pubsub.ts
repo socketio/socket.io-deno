@@ -1,15 +1,17 @@
 import type { CommandExecutor } from "./executor.ts";
 import { InvalidStateError } from "./errors.ts";
 import { readArrayReplyBody } from "./protocol/mod.ts";
+import { decoder } from "./protocol/_util.ts";
 
 type DefaultMessageType = string;
-type ValidMessageType = string | string[];
+type ValidMessageType = string | string[] | Uint8Array;
 
 export interface RedisSubscription<
   TMessage extends ValidMessageType = DefaultMessageType,
 > {
   readonly isClosed: boolean;
   receive(): AsyncIterableIterator<RedisPubSubMessage<TMessage>>;
+  receiveBinary(): AsyncIterableIterator<RedisPubSubMessage<TMessage>>;
   psubscribe(...patterns: string[]): Promise<void>;
   subscribe(...channels: string[]): Promise<void>;
   punsubscribe(...patterns: string[]): Promise<void>;
@@ -67,23 +69,33 @@ class RedisSubscriptionImpl<
     }
   }
 
-  async *receive(): AsyncIterableIterator<RedisPubSubMessage<TMessage>> {
+  receive(): AsyncIterableIterator<RedisPubSubMessage<TMessage>> {
+    return this.#_receive();
+  }
+
+  receiveBinary(): AsyncIterableIterator<RedisPubSubMessage<TMessage>> {
+    return this.#_receive(true);
+  }
+
+  async *#_receive(
+    binary = false,
+  ): AsyncIterableIterator<RedisPubSubMessage<TMessage>> {
     let forceReconnect = false;
     const connection = this.executor.connection;
     while (this.isConnected) {
       try {
-        let rep: [string, string, TMessage] | [
+        let rep: [string, string, Uint8Array] | [
           string,
           string,
           string,
-          TMessage,
+          Uint8Array,
         ];
         try {
           rep = (await readArrayReplyBody(connection.reader)) as [
             string,
             string,
-            TMessage,
-          ] | [string, string, string, TMessage];
+            Uint8Array,
+          ] | [string, string, string, Uint8Array];
         } catch (err) {
           if (err instanceof Deno.errors.BadResource) {
             // Connection already closed.
@@ -97,13 +109,13 @@ class RedisSubscriptionImpl<
         if (ev === "message" && rep.length === 3) {
           yield {
             channel: rep[1],
-            message: rep[2],
+            message: (binary ? rep[2] : decoder.decode(rep[2])) as TMessage,
           };
         } else if (ev === "pmessage" && rep.length === 4) {
           yield {
             pattern: rep[1],
             channel: rep[2],
-            message: rep[3],
+            message: (binary ? rep[3] : decoder.decode(rep[3])) as TMessage,
           };
         }
       } catch (error) {

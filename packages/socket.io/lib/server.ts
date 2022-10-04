@@ -15,7 +15,7 @@ import { Decoder, Encoder } from "../../socket.io-parser/mod.ts";
 import { Namespace, NamespaceReservedEvents } from "./namespace.ts";
 import { ParentNamespace } from "./parent-namespace.ts";
 import { Socket } from "./socket.ts";
-import { Room } from "./adapter.ts";
+import { Adapter, InMemoryAdapter, Room } from "./adapter.ts";
 import { BroadcastOperator, RemoteSocket } from "./broadcast-operator.ts";
 
 export interface ServerOptions {
@@ -36,6 +36,12 @@ export interface ServerOptions {
     createEncoder(): Encoder;
     createDecoder(): Decoder;
   };
+  /**
+   * The adapter to use to forward packets between several Socket.IO servers
+   */
+  adapter: (
+    nsp: Namespace,
+  ) => Adapter;
 }
 
 export interface ServerReservedEvents<
@@ -87,8 +93,8 @@ export class Server<
     ServerSideEvents,
     SocketData
   >;
+  public readonly opts: ServerOptions;
 
-  private readonly opts: ServerOptions;
   /* private */ readonly _encoder: Encoder;
 
   /* private */ _nsps: Map<
@@ -115,6 +121,9 @@ export class Server<
           return new Decoder();
         },
       },
+      adapter: (
+        nsp: Namespace,
+      ) => new InMemoryAdapter(nsp),
     }, opts);
 
     this.engine = new Engine(this.opts);

@@ -71,7 +71,7 @@ export class Namespace<
     super();
     this._server = server;
     this.name = name;
-    this.adapter = new Adapter(this as Namespace);
+    this.adapter = server.opts.adapter(this as Namespace);
   }
 
   /**

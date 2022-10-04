@@ -17,6 +17,8 @@ Table of content:
   - [`editHandshakeHeaders`](#edithandshakeheaders)
   - [`editResponseHeaders`](#editresponseheaders)
 - [Logs](#logs)
+- [Adapters](#adapters)
+  - [Redis adapter](#redis-adapter)
 
 ## Usage
 
@@ -228,6 +230,41 @@ await log.setup({
       handlers: ["console"],
     },
   },
+});
+```
+
+## Adapters
+
+Custom adapters can be used to broadcast packets between several Socket.IO
+servers.
+
+### Redis adapter
+
+Documentation: https://socket.io/docs/v4/redis-adapter/
+
+```js
+import { serve } from "https://deno.land/std/http/server.ts";
+import {
+  createRedisAdapter,
+  createRedisClient,
+  Server,
+} from "https://deno.land/x/socket_io/mod.ts";
+
+const [pubClient, subClient] = await Promise.all([
+  createRedisClient({
+    hostname: "localhost",
+  }),
+  createRedisClient({
+    hostname: "localhost",
+  }),
+]);
+
+const io = new Server({
+  adapter: createRedisAdapter(pubClient, subClient),
+});
+
+await serve(io.handler(), {
+  port: 3000,
 });
 ```
 

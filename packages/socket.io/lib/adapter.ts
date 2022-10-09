@@ -135,10 +135,13 @@ export class InMemoryAdapter extends EventEmitter<never, never, AdapterEvents> {
    * @param {Object} opts     the options
    */
   public broadcast(packet: Packet, opts: BroadcastOptions): void {
+    // make a copy of the array, since the `encode()` method updates the array in place to gather binary elements
+    // note: this won't work with nested binary elements
+    const args = packet.data.slice();
     const encodedPackets = this.nsp._server._encoder.encode(packet);
 
     this.apply(opts, (socket) => {
-      socket._notifyOutgoingListeners(packet);
+      socket._notifyOutgoingListeners(args);
       socket.client._writeToEngine(encodedPackets, {
         volatile: opts.flags && opts.flags.volatile,
       });
@@ -174,6 +177,9 @@ export class InMemoryAdapter extends EventEmitter<never, never, AdapterEvents> {
     // we can use the same id for each packet, since the _ids counter is common (no duplicate)
     packet.id = this.nsp._ids++;
 
+    // make a copy of the array, since the `encode()` method updates the array in place to gather binary elements
+    // note: this won't work with nested binary elements
+    const args = packet.data.slice();
     const encodedPackets = this.nsp._server._encoder.encode(packet);
 
     let clientCount = 0;
@@ -184,7 +190,7 @@ export class InMemoryAdapter extends EventEmitter<never, never, AdapterEvents> {
       // call the ack callback for each client response
       socket._acks.set(packet.id!, ack);
 
-      socket._notifyOutgoingListeners(packet);
+      socket._notifyOutgoingListeners(args);
       socket.client._writeToEngine(encodedPackets, packetOpts);
     });
 

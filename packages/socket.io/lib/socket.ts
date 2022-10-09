@@ -110,6 +110,8 @@ export interface Handshake {
 
 function noop() {}
 
+export type Event = [string, ...unknown[]];
+
 export class Socket<
   ListenEvents extends EventsMap = DefaultEventsMap,
   EmitEvents extends EventsMap = DefaultEventsMap,
@@ -139,8 +141,8 @@ export class Socket<
 
   /* private */ _acks: Map<number, () => void> = new Map();
   private flags: BroadcastFlags = {};
-  private anyIncomingListeners?: Array<(...args: unknown[]) => void>;
-  private anyOutgoingListeners?: Array<(...args: unknown[]) => void>;
+  #anyIncomingListeners?: Array<(...args: Event) => void>;
+  #anyOutgoingListeners?: Array<(...args: Event) => void>;
 
   /* private */ readonly client: Client<
     ListenEvents,
@@ -195,7 +197,7 @@ export class Socket<
     const flags = Object.assign({}, this.flags);
     this.flags = {};
 
-    this._notifyOutgoingListeners(packet);
+    this._notifyOutgoingListeners(packet.data);
     this.packet(packet, flags);
 
     return true;
@@ -335,12 +337,7 @@ export class Socket<
       args.push(this.ack(packet.id));
     }
 
-    if (this.anyIncomingListeners && this.anyIncomingListeners.length) {
-      const listeners = this.anyIncomingListeners.slice();
-      for (const listener of listeners) {
-        listener.apply(this, args);
-      }
-    }
+    this.#notifyIncomingListeners(args);
 
     if (this.connected) {
       super.emit.apply(this, args);
@@ -435,11 +432,10 @@ export class Socket<
    *
    * @private
    */
-  /* private */ _notifyOutgoingListeners(packet: Packet) {
-    if (this.anyOutgoingListeners && this.anyOutgoingListeners.length) {
-      const listeners = this.anyOutgoingListeners.slice();
-      for (const listener of listeners) {
-        listener.apply(this, packet.data);
+  /* private */ _notifyOutgoingListeners(args: Event) {
+    if (this.#anyOutgoingListeners) {
+      for (const listener of this.#anyOutgoingListeners) {
+        listener.apply(this, args);
       }
     }
   }
@@ -614,5 +610,119 @@ export class Socket<
       new Set<Room>([this.id]),
       flags,
     );
+  }
+
+  #notifyIncomingListeners(args: Event) {
+    if (this.#anyIncomingListeners) {
+      for (const listener of this.#anyIncomingListeners) {
+        listener.apply(this, args);
+      }
+    }
+  }
+
+  /**
+   * Adds a listener that will be fired when any event is received. The event name is passed as the first argument to
+   * the callback.
+   *
+   * ```js
+   * io.on("connection", (socket) => {
+   *   socket.onAnyIncoming((event, ...args) => {
+   *     console.log(`got event ${event}`);
+   *   });
+   * });
+   * ```
+   *
+   * @param listener
+   */
+  public onAnyIncoming(listener: (...args: Event) => void): this {
+    this.#anyIncomingListeners = this.#anyIncomingListeners || [];
+    this.#anyIncomingListeners.push(listener);
+    return this;
+  }
+
+  /**
+   * Removes the listener that will be fired when any event is received.
+   *
+   * ```js
+   * io.on("connection", (socket) => {
+   *   const catchAllListener = (event, ...args) => {
+   *     console.log(`got event ${event}`);
+   *   }
+   *
+   *   socket.onAnyIncoming(catchAllListener);
+   *
+   *   // remove a specific listener
+   *   socket.offAnyIncoming(catchAllListener);
+   *
+   *   // or remove all listeners
+   *   socket.offAnyIncoming();
+   * });
+   * ```
+   *
+   * @param listener
+   */
+  public offAnyIncoming(listener?: (...args: Event) => void): this {
+    if (this.#anyIncomingListeners && listener) {
+      const i = this.#anyIncomingListeners.indexOf(listener);
+      if (i !== -1) {
+        this.#anyIncomingListeners.splice(i, 1);
+      }
+    } else {
+      this.#anyIncomingListeners = [];
+    }
+    return this;
+  }
+
+  /**
+   * Adds a listener that will be fired when any event is sent. The event name is passed as the first argument to
+   * the callback.
+   *
+   * ```js
+   * io.on("connection", (socket) => {
+   *   socket.onAnyOutgoing((event, ...args) => {
+   *     console.log(`sent event ${event}`);
+   *   });
+   * });
+   * ```
+   *
+   * @param listener
+   */
+  public onAnyOutgoing(listener: (...args: Event) => void): this {
+    this.#anyOutgoingListeners = this.#anyOutgoingListeners || [];
+    this.#anyOutgoingListeners.push(listener);
+    return this;
+  }
+
+  /**
+   * Removes the listener that will be fired when any event is sent.
+   *
+   * ```js
+   * io.on("connection", (socket) => {
+   *   const catchAllListener = (event, ...args) => {
+   *     console.log(`sent event ${event}`);
+   *   }
+   *
+   *   socket.onAnyOutgoing(catchAllListener);
+   *
+   *   // remove a specific listener
+   *   socket.offAnyOutgoing(catchAllListener);
+   *
+   *   // or remove all listeners
+   *   socket.offAnyOutgoing();
+   * });
+   * ```
+   *
+   * @param listener - the catch-all listener
+   */
+  public offAnyOutgoing(listener?: (...args: Event) => void): this {
+    if (this.#anyOutgoingListeners && listener) {
+      const i = this.#anyOutgoingListeners.indexOf(listener);
+      if (i !== -1) {
+        this.#anyOutgoingListeners.splice(i, 1);
+      }
+    } else {
+      this.#anyOutgoingListeners = [];
+    }
+    return this;
   }
 }

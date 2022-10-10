@@ -11,6 +11,9 @@ interface WriteOptions {
   volatile?: boolean;
 }
 
+/**
+ * A {@link Client} can be associated with many multiplexed {@link Socket} that belong to different {@link Namespace}.
+ */
 export class Client<
   ListenEvents extends EventsMap,
   EmitEvents extends EventsMap,

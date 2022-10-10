@@ -10,6 +10,7 @@ import {
   eioPush,
   enableLogs,
   parseSessionID,
+  runHandshake,
 } from "../../util.test.ts";
 import { setup } from "./setup.test.ts";
 
@@ -231,6 +232,32 @@ describe("handshake", () => {
         const body = await eioPoll(port, sid);
 
         assertEquals(body, '44/unknown,{"message":"Invalid namespace"}');
+
+        done();
+      },
+    );
+  });
+
+  it("should complete handshake before sending any event", () => {
+    const io = new Server();
+
+    return setup(
+      io,
+      1,
+      async (port, done) => {
+        io.use((socket) => {
+          socket.emit("1");
+          io.emit("ignored"); // socket is not connected yet
+          return Promise.resolve();
+        });
+
+        io.on("connection", (socket) => {
+          socket.emit("2");
+        });
+
+        const [_, firstPacket] = await runHandshake(port);
+
+        assertEquals(firstPacket, '42["1"]\x1e42["2"]');
 
         done();
       },

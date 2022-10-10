@@ -144,6 +144,8 @@ export class Socket<
   #anyIncomingListeners?: Array<(...args: Event) => void>;
   #anyOutgoingListeners?: Array<(...args: Event) => void>;
 
+  #preConnectBuffer: Packet[] = [];
+
   /* private */ readonly client: Client<
     ListenEvents,
     EmitEvents,
@@ -197,8 +199,12 @@ export class Socket<
     const flags = Object.assign({}, this.flags);
     this.flags = {};
 
-    this._notifyOutgoingListeners(packet.data);
-    this.packet(packet, flags);
+    if (this.connected) {
+      this._notifyOutgoingListeners(packet.data);
+      this.packet(packet, flags);
+    } else {
+      this.#preConnectBuffer.push(packet);
+    }
 
     return true;
   }
@@ -514,6 +520,11 @@ export class Socket<
     this.connected = true;
     this.join(this.id);
     this.packet({ type: PacketType.CONNECT, data: { sid: this.id } });
+    this.#preConnectBuffer.forEach((packet) => {
+      this._notifyOutgoingListeners(packet.data);
+      this.packet(packet);
+    });
+    this.#preConnectBuffer = [];
   }
 
   /**

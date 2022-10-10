@@ -1,10 +1,7 @@
 import { assertEquals, describe, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import {
-  enableLogs,
-  parseSessionID,
-  testServeWithAsyncResults,
-} from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs, parseSessionID } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -12,7 +9,7 @@ describe("upgrade", () => {
   it("should upgrade", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 3, async (port, partialDone) => {
+    return setup(engine, 3, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("message", (val) => {
           assertEquals(val, "upgraded!");
@@ -65,7 +62,7 @@ describe("upgrade", () => {
       upgradeTimeout: 5,
     });
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("upgrading", (transport) => {
           transport.on("close", partialDone);

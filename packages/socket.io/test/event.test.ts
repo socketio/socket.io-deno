@@ -1,6 +1,3 @@
-// TODO
-// - dynamic namespace
-
 import {
   assertEquals,
   assertIsError,
@@ -8,13 +5,8 @@ import {
   it,
 } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import {
-  eioPoll,
-  eioPush,
-  enableLogs,
-  runHandshake,
-  testServeWithAsyncResults,
-} from "./util.ts";
+import { eioPoll, eioPush, enableLogs, runHandshake } from "../../util.test.ts";
+import { setup } from "./setup.test.ts";
 
 await enableLogs();
 
@@ -22,7 +14,7 @@ describe("event", () => {
   it("should receive events", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -48,7 +40,7 @@ describe("event", () => {
   it("should emit events", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -69,7 +61,7 @@ describe("event", () => {
   it("should receive events with ack", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -99,7 +91,7 @@ describe("event", () => {
   it("should emit events with ack", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -124,7 +116,7 @@ describe("event", () => {
   it("should timeout if the client does not acknowledge the event", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -144,7 +136,7 @@ describe("event", () => {
   it("should timeout if the client does not acknowledge the event in time", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -165,7 +157,7 @@ describe("event", () => {
   it("should not timeout if the client does acknowledge the event", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {

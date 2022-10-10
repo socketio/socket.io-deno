@@ -1,11 +1,7 @@
 import { assertEquals, describe, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import {
-  enableLogs,
-  parseSessionID,
-  testServe,
-  testServeWithAsyncResults,
-} from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs, parseSessionID } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -16,7 +12,7 @@ describe("heartbeat", () => {
       pingTimeout: 25,
     });
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const handshake = await fetch(
         `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
         {
@@ -50,6 +46,8 @@ describe("heartbeat", () => {
         // consume the response body
         await dataResponse.body?.cancel();
       }
+
+      done();
     });
   });
 
@@ -59,7 +57,7 @@ describe("heartbeat", () => {
       pingTimeout: 25,
     });
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       const socket = new WebSocket(
         `ws://localhost:${port}/engine.io/?EIO=4&transport=websocket`,
       );

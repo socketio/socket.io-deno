@@ -9,9 +9,9 @@ import {
   eioPoll,
   eioPush,
   enableLogs,
-  testServeWithAsyncResults,
-} from "./util.ts";
-import { parseSessionID } from "../../engine.io/test/util.ts";
+  parseSessionID,
+} from "../../util.test.ts";
+import { setup } from "./setup.test.ts";
 
 await enableLogs();
 
@@ -19,7 +19,7 @@ describe("handshake", () => {
   it("should trigger a connection event", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -85,7 +85,7 @@ describe("handshake", () => {
   it("should trigger a connection event with custom auth payload, header and query parameter", () => {
     const server = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       server,
       2,
       async (port, partialDone) => {
@@ -147,7 +147,7 @@ describe("handshake", () => {
   it("should trigger a connection event (custom namespace)", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -180,7 +180,7 @@ describe("handshake", () => {
   it("should trigger a connection event (dynamic namespace)", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {
@@ -213,7 +213,7 @@ describe("handshake", () => {
   it("should return an error when reaching a non-existent namespace", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {

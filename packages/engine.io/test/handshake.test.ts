@@ -5,7 +5,8 @@ import {
   it,
 } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import { enableLogs, testServe, testServeWithAsyncResults } from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -13,7 +14,7 @@ describe("handshake", () => {
   it("should send handshake data (polling)", () => {
     const engine = new Server();
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const response = await fetch(
         `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
         {
@@ -32,6 +33,8 @@ describe("handshake", () => {
       assertEquals(handshake.pingInterval, 25000);
       assertEquals(handshake.upgrades, ["websocket"]);
       assertEquals(handshake.maxPayload, 1000000);
+
+      done();
     });
   });
 
@@ -42,7 +45,7 @@ describe("handshake", () => {
       maxHttpBufferSize: 300,
     });
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const response = await fetch(
         `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
         {
@@ -60,13 +63,15 @@ describe("handshake", () => {
       assertEquals(handshake.pingInterval, 100);
       assertEquals(handshake.pingTimeout, 200);
       assertEquals(handshake.maxPayload, 300);
+
+      done();
     });
   });
 
   it("should send handshake data (ws)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       engine,
       1,
       (port, done) => {
@@ -94,7 +99,7 @@ describe("handshake", () => {
   it("should trigger a connection event", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       engine,
       2,
       async (port, partialDone) => {

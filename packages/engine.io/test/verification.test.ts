@@ -5,7 +5,8 @@ import {
   it,
 } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import { enableLogs, testServe, testServeWithAsyncResults } from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -13,7 +14,7 @@ describe("verification", () => {
   it("should ignore requests that do not match the given path", () => {
     const engine = new Server();
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const response = await fetch(`http://localhost:${port}/test/`, {
         method: "get",
       });
@@ -22,13 +23,15 @@ describe("verification", () => {
 
       // consume the response body
       await response.body?.cancel();
+
+      done();
     });
   });
 
   it("should disallow non-existent transports", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection_error", (err) => {
         assertEquals(err.code, 0);
         assertEquals(err.message, "Transport unknown");
@@ -57,7 +60,7 @@ describe("verification", () => {
   it("should disallow `constructor` as transports", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection_error", (err) => {
         assertEquals(err.code, 0);
         assertEquals(err.message, "Transport unknown");
@@ -86,7 +89,7 @@ describe("verification", () => {
   it("should disallow non-existent sids", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection_error", (err) => {
         assertEquals(err.code, 1);
         assertEquals(err.message, "Session ID unknown");
@@ -119,7 +122,7 @@ describe("verification", () => {
       },
     });
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection_error", (err) => {
         assertExists(err.req);
         assertEquals(err.code, 4);
@@ -153,7 +156,7 @@ describe("verification", () => {
       },
     });
 
-    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+    return setup(engine, 2, (port, partialDone) => {
       engine.on("connection_error", (err) => {
         assertExists(err.req);
         assertEquals(err.code, 4);
@@ -174,7 +177,7 @@ describe("verification", () => {
   it("should disallow invalid handshake method", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       engine,
       2,
       async (port, partialDone) => {
@@ -208,7 +211,7 @@ describe("verification", () => {
   it("should disallow unsupported protocol versions", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       engine,
       2,
       async (port, partialDone) => {
@@ -242,7 +245,7 @@ describe("verification", () => {
   it("should disallow invalid transport", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+    return setup(engine, 2, (port, partialDone) => {
       engine.on("connection_error", (err) => {
         assertExists(err.req);
         assertEquals(err.code, 3);
@@ -282,7 +285,7 @@ describe("verification", () => {
   it("should disallow duplicate WebSocket connections", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       const socket = new WebSocket(
         `ws://localhost:${port}/engine.io/?EIO=4&transport=websocket`,
       );

@@ -1,6 +1,7 @@
 import { assertEquals, describe, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import { enableLogs, parseSessionID, testServe } from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs, parseSessionID } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -17,7 +18,7 @@ describe("CORS", () => {
       },
     });
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const response = await fetch(
         `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
         {
@@ -53,6 +54,8 @@ describe("CORS", () => {
 
       // consume the response body
       await response.body?.cancel();
+
+      done();
     });
   });
 
@@ -68,7 +71,7 @@ describe("CORS", () => {
       },
     });
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const response = await fetch(
         `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
         {
@@ -134,6 +137,8 @@ describe("CORS", () => {
 
       // consume the response body
       await dataResponse.body?.cancel();
+
+      done();
     });
   });
 
@@ -149,7 +154,7 @@ describe("CORS", () => {
       },
     });
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       const response = await fetch(
         `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
         {
@@ -185,6 +190,8 @@ describe("CORS", () => {
 
       // consume the response body
       await response.body?.cancel();
+
+      done();
     });
   });
 });

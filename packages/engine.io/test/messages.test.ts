@@ -5,12 +5,8 @@ import {
   it,
 } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import {
-  enableLogs,
-  parseSessionID,
-  testServe,
-  testServeWithAsyncResults,
-} from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs, parseSessionID } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -18,7 +14,7 @@ describe("messages", () => {
   it("should arrive from server to client (polling, plain-text)", () => {
     const engine = new Server();
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       engine.on("connection", (socket) => {
         socket.send("hello €亜Б");
       });
@@ -44,13 +40,15 @@ describe("messages", () => {
       const body = await pollResponse.text();
 
       assertEquals(body, "4hello €亜Б");
+
+      done();
     });
   });
 
   it("should arrive from server to client (polling, binary)", () => {
     const engine = new Server();
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       engine.on("connection", (socket) => {
         socket.send(Uint8Array.from([1, 2, 3, 4]));
       });
@@ -76,13 +74,15 @@ describe("messages", () => {
       const body = await pollResponse.text();
 
       assertEquals(body, "bAQIDBA==");
+
+      done();
     });
   });
 
   it("should arrive from server to client (polling, mixed)", () => {
     const engine = new Server();
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 1, async (port, done) => {
       engine.on("connection", (socket) => {
         socket.send(Uint8Array.from([1, 2, 3, 4]));
         socket.send("hello €亜Б");
@@ -109,13 +109,15 @@ describe("messages", () => {
       const body = await pollResponse.text();
 
       assertEquals(body, "bAQIDBA==\x1e4hello €亜Б");
+
+      done();
     });
   });
 
   it("should arrive from server to client (ws, plain-text)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       engine.on("connection", (socket) => {
         socket.send("hello €亜Б");
       });
@@ -140,7 +142,7 @@ describe("messages", () => {
   it("should arrive from server to client (ws, binary)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       engine.on("connection", (socket) => {
         socket.send(Uint8Array.from([1, 2, 3, 4]));
       });
@@ -167,7 +169,7 @@ describe("messages", () => {
   it("should arrive from client to server (polling, plain-text)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("message", (val) => {
           assertEquals(val, "hello €亜Б");
@@ -202,7 +204,7 @@ describe("messages", () => {
   it("should arrive from client to server (polling, binary)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("message", (val) => {
           assertInstanceOf(val, ArrayBuffer);
@@ -242,7 +244,7 @@ describe("messages", () => {
   it("should arrive from client to server (polling, mixed)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 3, async (port, partialDone) => {
+    return setup(engine, 3, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         let count = 0;
 
@@ -284,7 +286,7 @@ describe("messages", () => {
   it("should arrive from client to server (ws, plain-text)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       engine.on("connection", (socket) => {
         socket.on("message", (val) => {
           assertEquals(val, "hello €亜Б");
@@ -305,7 +307,7 @@ describe("messages", () => {
   it("should arrive from client to server (ws, binary)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       engine.on("connection", (socket) => {
         socket.on("message", (val) => {
           assertInstanceOf(val, ArrayBuffer);

@@ -1,6 +1,7 @@
 import { assertEquals, describe, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import { enableLogs, runHandshake, testServeWithAsyncResults } from "./util.ts";
+import { enableLogs, runHandshake } from "../../util.test.ts";
+import { setup } from "./setup.test.ts";
 
 await enableLogs();
 
@@ -8,7 +9,7 @@ describe("socket", () => {
   it("should keep track of rooms", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       2,
       async (port, partialDone) => {

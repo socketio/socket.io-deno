@@ -6,8 +6,8 @@ import {
   enableLogs,
   parseSessionID,
   runHandshake,
-  testServeWithAsyncResults,
-} from "./util.ts";
+} from "../../util.test.ts";
+import { setup } from "./setup.test.ts";
 
 await enableLogs();
 
@@ -15,7 +15,7 @@ describe("event", () => {
   it("should call the middleware functions before the connection", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -52,7 +52,7 @@ describe("event", () => {
   it("should be ignored if socket gets closed", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -74,7 +74,7 @@ describe("event", () => {
   it("should disallow connection", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -112,7 +112,7 @@ describe("event", () => {
   it("should disallow connection and include an error object", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {

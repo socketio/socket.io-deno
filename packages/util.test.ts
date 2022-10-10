@@ -1,5 +1,3 @@
-import { type Server } from "./socket.io/mod.ts";
-import { serve } from "../test_deps.ts";
 import * as log from "../test_deps.ts";
 import { EventEmitter, EventsMap } from "./event-emitter/mod.ts";
 
@@ -34,47 +32,6 @@ export function createPartialDone(
       reject(`called too many times: ${i} > ${count}`);
     }
   };
-}
-
-export function testServe(
-  server1: Server,
-  server2: Server,
-  server3: Server,
-  count: number,
-  callback: (ports: number[], done: () => void) => Promise<void> | void,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const ports: number[] = [];
-    const cleanupFunctions: Array<() => void> = [];
-
-    let i = 0;
-
-    [server1, server2, server3].forEach((server, index) => {
-      const abortController = new AbortController();
-
-      serve(server.handler(), {
-        port: 8000 + index,
-        onListen: ({ port }) => {
-          ports.push(port);
-          cleanupFunctions.push(() => {
-            // close the HTTP server
-            abortController.abort();
-            server.close();
-          });
-
-          if (++i === 3) {
-            const partialDone = createPartialDone(count, () => {
-              setTimeout(() => cleanupFunctions.forEach((fn) => fn()), 10);
-              setTimeout(resolve, 30);
-            }, reject);
-
-            return callback(ports, partialDone);
-          }
-        },
-        signal: abortController.signal,
-      });
-    });
-  });
 }
 
 export async function runHandshake(

@@ -1,13 +1,8 @@
 import { assertEquals, describe, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import {
-  eioPoll,
-  enableLogs,
-  runHandshake,
-  testServeWithAsyncResults,
-  waitFor,
-} from "./util.ts";
+import { eioPoll, enableLogs, runHandshake, waitFor } from "../../util.test.ts";
 import { Socket } from "../lib/socket.ts";
+import { setup } from "./setup.test.ts";
 
 await enableLogs();
 
@@ -17,7 +12,7 @@ describe("broadcast", () => {
       pingInterval: 50,
     });
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -53,7 +48,7 @@ describe("broadcast", () => {
       pingInterval: 50,
     });
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -92,7 +87,7 @@ describe("broadcast", () => {
       pingInterval: 50,
     });
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {

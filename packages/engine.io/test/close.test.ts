@@ -1,12 +1,7 @@
 import { assertEquals, describe, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import {
-  enableLogs,
-  parseSessionID,
-  sleep,
-  testServe,
-  testServeWithAsyncResults,
-} from "./util.ts";
+import { setup } from "./setup.test.ts";
+import { enableLogs, parseSessionID, sleep } from "../../util.test.ts";
 
 await enableLogs();
 
@@ -17,10 +12,12 @@ describe("close", () => {
       pingTimeout: 5,
     });
 
-    return testServe(engine, async (port) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "ping timeout");
+
+          partialDone();
         });
       });
 
@@ -46,6 +43,8 @@ describe("close", () => {
 
       // consume the response body
       await pollResponse.body?.cancel();
+
+      partialDone();
     });
   });
 
@@ -55,7 +54,7 @@ describe("close", () => {
       pingTimeout: 5,
     });
 
-    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+    return setup(engine, 2, (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "ping timeout");
@@ -75,7 +74,7 @@ describe("close", () => {
   it("should trigger when the server closes the socket (polling)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "forced close");
@@ -115,7 +114,7 @@ describe("close", () => {
   it("should trigger when the server closes the socket (ws)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+    return setup(engine, 2, (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "forced close");
@@ -139,7 +138,7 @@ describe("close", () => {
   it("should trigger when the client sends a 'close' packet (polling)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "transport close");
@@ -183,7 +182,7 @@ describe("close", () => {
   it("should trigger when the client sends a 'close' packet (ws)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+    return setup(engine, 2, (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "transport close");
@@ -210,7 +209,7 @@ describe("close", () => {
   it("should trigger when the client closes the connection (ws)", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, (port, partialDone) => {
+    return setup(engine, 2, (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "transport close");
@@ -232,7 +231,7 @@ describe("close", () => {
   it("should trigger when the client sends ill-formatted data", () => {
     const engine = new Server();
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "parse error");
@@ -273,7 +272,7 @@ describe("close", () => {
       maxHttpBufferSize: 100,
     });
 
-    return testServeWithAsyncResults(engine, 2, async (port, partialDone) => {
+    return setup(engine, 2, async (port, partialDone) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "transport error");
@@ -313,7 +312,7 @@ describe("close", () => {
       maxHttpBufferSize: 100,
     });
 
-    return testServeWithAsyncResults(engine, 1, (port, done) => {
+    return setup(engine, 1, (port, done) => {
       engine.on("connection", (socket) => {
         socket.on("close", (reason) => {
           assertEquals(reason, "transport error");

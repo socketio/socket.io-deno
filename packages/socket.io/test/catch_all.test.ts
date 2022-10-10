@@ -1,6 +1,6 @@
 import { assertEquals, describe, fail, it } from "../../../test_deps.ts";
 import { Server } from "../lib/server.ts";
-import { testServeWithAsyncResults } from "./util.ts";
+import { setup } from "./setup.test.ts";
 import { Socket } from "../lib/socket.ts";
 import {
   eioPoll,
@@ -16,7 +16,7 @@ describe("catch-all listeners", () => {
   it("should catch all incoming packets", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -42,7 +42,7 @@ describe("catch-all listeners", () => {
   it("should remove the incoming catch-all listener", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -68,7 +68,7 @@ describe("catch-all listeners", () => {
   it("should catch all outgoing packets", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -96,7 +96,7 @@ describe("catch-all listeners", () => {
   it("should catch all outgoing packets (broadcast)", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {
@@ -124,7 +124,7 @@ describe("catch-all listeners", () => {
   it("should catch all outgoing packets (broadcast with binary)", () => {
     const io = new Server();
 
-    return testServeWithAsyncResults(
+    return setup(
       io,
       1,
       async (port, done) => {

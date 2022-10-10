@@ -28,6 +28,8 @@ interface SocketEvents {
   close: (reason: CloseReason) => void;
 }
 
+const FAST_UPGRADE_INTERVAL_MS = 100;
+
 export class Socket extends EventEmitter<
   never,
   never,
@@ -202,8 +204,22 @@ export class Socket extends EventEmitter<
     }, this.opts.upgradeTimeout);
 
     transport.on("close", () => {
+      clearInterval(fastUpgradeTimerId);
       transport.off();
     });
+
+    let fastUpgradeTimerId: number;
+
+    // we need to make sure that no packets gets lost during the upgrade, so the client does not cancel the HTTP
+    // long-polling request itself, instead the server sends a "noop" packet to cleanly end any ongoing polling request
+    const sendNoopPacket = () => {
+      if (this.transport.name === "polling" && this.transport.writable) {
+        getLogger("engine.io").debug(
+          "[socket] writing a noop packet to polling for fast upgrade",
+        );
+        this.transport.send([{ type: "noop" }]);
+      }
+    };
 
     transport.on("packet", (packet) => {
       if (packet.type === "ping" && packet.data === "probe") {
@@ -211,13 +227,21 @@ export class Socket extends EventEmitter<
           "[socket] got probe ping packet, sending pong",
         );
         transport.send([{ type: "pong", data: "probe" }]);
+
+        sendNoopPacket();
+        fastUpgradeTimerId = setInterval(
+          sendNoopPacket,
+          FAST_UPGRADE_INTERVAL_MS,
+        );
+
         this.emitReserved("upgrading", transport);
-      } else if (packet.type === "upgrade") {
+      } else if (packet.type === "upgrade" && this.readyState !== "closed") {
         getLogger("engine.io").debug("[socket] got upgrade packet - upgrading");
 
         this.upgradeState = "upgraded";
 
         clearTimeout(timeoutId);
+        clearInterval(fastUpgradeTimerId);
         transport.off();
         this.closeTransport();
         this.bindTransport(transport);

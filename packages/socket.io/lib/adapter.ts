@@ -31,7 +31,11 @@ interface AdapterEvents {
   "error": (err: Error) => void;
 }
 
-export class InMemoryAdapter extends EventEmitter<never, never, AdapterEvents> {
+export class InMemoryAdapter extends EventEmitter<
+  Record<never, never>,
+  Record<never, never>,
+  AdapterEvents
+> {
   protected readonly nsp: Namespace;
 
   protected rooms: Map<Room, Set<SocketId>> = new Map();

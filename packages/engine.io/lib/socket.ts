@@ -31,8 +31,8 @@ interface SocketEvents {
 const FAST_UPGRADE_INTERVAL_MS = 100;
 
 export class Socket extends EventEmitter<
-  never,
-  never,
+  Record<never, never>,
+  Record<never, never>,
   SocketEvents
 > {
   public readonly id: string;

@@ -13,8 +13,8 @@ interface TransportEvents {
 type ReadyState = "open" | "closing" | "closed";
 
 export abstract class Transport extends EventEmitter<
-  never,
-  never,
+  Record<never, never>,
+  Record<never, never>,
   TransportEvents
 > {
   public writable = false;

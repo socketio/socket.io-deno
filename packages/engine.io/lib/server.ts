@@ -95,7 +95,11 @@ const ERROR_MESSAGES = new Map<ERROR_CODES, string>([
   [ERROR_CODES.UNSUPPORTED_PROTOCOL_VERSION, "Unsupported protocol version"],
 ]);
 
-export class Server extends EventEmitter<never, never, ServerReservedEvents> {
+export class Server extends EventEmitter<
+  Record<never, never>,
+  Record<never, never>,
+  ServerReservedEvents
+> {
   public readonly opts: ServerOptions;
 
   private clients: Map<string, Socket> = new Map();

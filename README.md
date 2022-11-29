@@ -5,6 +5,7 @@ An implementation of the Socket.IO protocol for Deno.
 Table of content:
 
 - [Usage](#usage)
+  - [With oak](#with-oak)
 - [Options](#options)
   - [`path`](#path)
   - [`connectTimeout`](#connecttimeout)
@@ -23,7 +24,7 @@ Table of content:
 ## Usage
 
 ```ts
-import { serve } from "https://deno.land/std@0.150.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.166.0/http/server.ts";
 import { Server } from "https://deno.land/x/socket_io@0.2.0/mod.ts";
 
 const io = new Server();
@@ -77,6 +78,47 @@ const io = new Server<
   InterServerEvents,
   SocketData
 >();
+```
+
+### With oak
+
+You need to use the [.handle()](https://github.com/oakserver/oak#handle-method) method:
+
+```ts
+import { serve } from "https://deno.land/std@0.166.0/http/server.ts";
+import { Server } from "https://deno.land/x/socket_io@0.2.0/mod.ts";
+import { Application } from "https://deno.land/x/oak@v11.1.0/mod.ts";
+
+const app = new Application();
+
+app.use((ctx) => {
+    ctx.response.body = "Hello World!";
+});
+
+const io = new Server();
+
+io.on("connection", (socket) => {
+    console.log(`socket ${socket.id} connected`);
+
+    socket.emit("hello", "world");
+
+    socket.on("disconnect", (reason) => {
+        console.log(`socket ${socket.id} disconnected due to ${reason}`);
+    });
+});
+
+const handler = io.handler(async (req) => {
+    const response = await app.handle(req);
+    if (response) {
+        return response;
+    } else {
+        return new Response(null, { status: 404 });
+    }
+});
+
+await serve(handler, {
+    port: 3000,
+});
 ```
 
 ## Options
@@ -214,7 +256,7 @@ The library relies on the standard `log` module, so you can display the internal
 logs of the Socket.IO server with:
 
 ```ts
-import * as log from "https://deno.land/std@0.150.0/log/mod.ts";
+import * as log from "https://deno.land/std@0.166.0/log/mod.ts";
 
 await log.setup({
   handlers: {

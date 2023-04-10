@@ -15,7 +15,7 @@ import { Decoder, Encoder } from "../../socket.io-parser/mod.ts";
 import { Namespace, NamespaceReservedEvents } from "./namespace.ts";
 import { ParentNamespace } from "./parent-namespace.ts";
 import { Socket } from "./socket.ts";
-import { Adapter, InMemoryAdapter, Room } from "./adapter.ts";
+import { Adapter, SessionAwareAdapter, Room } from "./adapter.ts";
 import { BroadcastOperator, RemoteSocket } from "./broadcast-operator.ts";
 
 export interface ServerOptions {
@@ -29,6 +29,25 @@ export interface ServerOptions {
    * @default 45000
    */
   connectTimeout: number;
+  /**
+   * Whether to enable the recovery of connection state when a client temporarily disconnects.
+   *
+   * The connection state includes the missed packets, the rooms the socket was in and the `data` attribute.
+   */
+  connectionStateRecovery?: {
+    /**
+     * The backup duration of the sessions and the packets.
+     *
+     * @default 120000 (2 minutes)
+     */
+    maxDisconnectionDuration?: number;
+    /**
+     * Whether to skip middlewares upon successful connection state recovery.
+     *
+     * @default true
+     */
+    skipMiddlewares?: boolean;
+  };
   /**
    * The parser to use to encode and decode packets
    */
@@ -45,9 +64,9 @@ export interface ServerOptions {
 }
 
 export interface ServerReservedEvents<
-  ListenEvents,
-  EmitEvents,
-  ServerSideEvents,
+  ListenEvents extends EventsMap,
+  EmitEvents extends EventsMap,
+  ServerSideEvents extends EventsMap,
   SocketData,
 > extends
   NamespaceReservedEvents<
@@ -104,7 +123,7 @@ export class Server<
   ListenEvents extends EventsMap = DefaultEventsMap,
   EmitEvents extends EventsMap = ListenEvents,
   ServerSideEvents extends EventsMap = DefaultEventsMap,
-  SocketData = unknown,
+  SocketData = Record<string, any>,
 > extends EventEmitter<
   ListenEvents,
   EmitEvents,
@@ -139,7 +158,7 @@ export class Server<
   constructor(opts: Partial<ServerOptions & EngineOptions> = {}) {
     super();
 
-    this.opts = Object.assign({
+    opts = Object.assign({
       path: "/socket.io/",
       connectTimeout: 45_000,
       parser: {
@@ -149,11 +168,27 @@ export class Server<
         createDecoder() {
           return new Decoder();
         },
-      },
-      adapter: (
-        nsp: Namespace,
-      ) => new InMemoryAdapter(nsp),
+      }
     }, opts);
+
+    if (opts.connectionStateRecovery != null) {
+      opts.connectionStateRecovery = Object.assign(
+        {
+          maxDisconnectionDuration: 2 * 60 * 1000,
+          skipMiddlewares: true,
+        },
+        opts.connectionStateRecovery
+      )
+      opts.adapter = (
+        nsp: Namespace,
+        ) => new SessionAwareAdapter(nsp)
+    } else {
+      opts.adapter = (
+        nsp: Namespace,
+      ) => new Adapter(nsp)
+    }
+
+    this.opts = opts as ServerOptions
 
     this.engine = new Engine(this.opts);
 

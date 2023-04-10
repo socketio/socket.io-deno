@@ -17,15 +17,18 @@ export interface NamespaceReservedEvents<
   EmitEvents extends EventsMap,
   ServerSideEvents extends EventsMap,
   SocketData,
-> {
+  > {
+  connect: (
+    socket: Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>
+  ) => void;
   connection: (
-    socket: Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>,
+    socket: Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>
   ) => void;
 }
 
 export const RESERVED_EVENTS: ReadonlySet<string | symbol> = new Set<
   keyof ServerReservedEvents<never, never, never, never>
->(["connection", "new_namespace"] as const);
+  >(["connect", "connection", "new_namespace"] as const);
 
 /**
  * A Namespace is a communication channel that allows you to split the logic of your application over a single shared
@@ -84,7 +87,7 @@ export class Namespace<
   ListenEvents extends EventsMap = DefaultEventsMap,
   EmitEvents extends EventsMap = DefaultEventsMap,
   ServerSideEvents extends EventsMap = DefaultEventsMap,
-  SocketData = unknown,
+  SocketData = Record<string, any>,
 > extends EventEmitter<
   ServerSideEvents,
   EmitEvents,
@@ -248,12 +251,15 @@ export class Namespace<
     getLogger("socket.io").debug(
       `[namespace] adding socket to nsp ${this.name}`,
     );
-    const socket = new Socket<
-      ListenEvents,
-      EmitEvents,
-      ServerSideEvents,
-      SocketData
-    >(this, client, handshake);
+    const socket = await this._createSocket(client, handshake);
+
+    if (
+      this._server.opts.connectionStateRecovery?.skipMiddlewares &&
+      socket.recovered &&
+      client.conn.readyState === "open"
+    ) {
+      return this._doConnect(socket, callback);
+    }
 
     try {
       await this.run(socket);
@@ -288,8 +294,67 @@ export class Namespace<
     callback(socket);
 
     // fire user-set events
+    this.emitReserved("connect", socket);
     this.emitReserved("connection", socket);
   }
+
+  private async _createSocket (
+    client: Client<ListenEvents, EmitEvents, ServerSideEvents, SocketData>,
+    handshake: Handshake
+  ): Promise<Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>> {
+    const sessionId = handshake.auth.pid;
+    const offset = handshake.auth.offset;
+    let session;
+    if (
+      this._server.opts.connectionStateRecovery &&
+      typeof sessionId === "string" &&
+      typeof offset === "string"
+    ) {
+      try {
+        session = await this.adapter.restoreSession(sessionId, offset);
+      } catch (e) {
+        getLogger("socket.io").debug("error while restoring session: %s", e);
+      }
+    }
+    if (session) {
+      getLogger("socket.io").debug("connection state recovered for sid %s", session.sid);
+      return new Socket(this, client, handshake, session);
+    } else return new Socket(this, client, handshake);
+  }
+
+  private async _doConnect(
+    socket: Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>,
+    fn: (
+      socket: Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>
+    ) => void
+  ) {
+      try {
+        await this.run(socket);
+      } catch (err) {
+        getLogger("socket.io").debug(
+          "[namespace] middleware error, sending CONNECT_ERROR packet to the client",
+        );
+        socket._cleanup();
+        return socket._error({
+          message: err.message || err,
+          data: err.data,
+        });
+      }
+
+      // track socket
+      this.sockets.set(socket.id, socket);
+
+      // it's paramount that the internal `onconnect` logic
+      // fires before user-set events to prevent state order
+      // violations (such as a disconnection before the connection
+      // logic is complete)
+      socket._onconnect();
+      if (fn) fn(socket);
+
+      // fire user-set events
+      this.emitReserved("connect", socket);
+      this.emitReserved("connection", socket);
+    }
 
   /**
    * Removes a client. Called by each `Socket`.

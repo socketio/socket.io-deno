@@ -24,7 +24,7 @@ Table of content:
 ## Usage
 
 ```ts
-import { serve } from "https://deno.land/std@0.166.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
 import { Server } from "https://deno.land/x/socket_io@0.2.0/mod.ts";
 
 const io = new Server();
@@ -86,9 +86,9 @@ You need to use the [.handle()](https://github.com/oakserver/oak#handle-method)
 method:
 
 ```ts
-import { serve } from "https://deno.land/std@0.166.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
 import { Server } from "https://deno.land/x/socket_io@0.2.0/mod.ts";
-import { Application } from "https://deno.land/x/oak@v11.1.0/mod.ts";
+import { Application } from "https://deno.land/x/oak@14.2.0/mod.ts";
 
 const app = new Application();
 
@@ -281,12 +281,12 @@ servers.
 Documentation: https://socket.io/docs/v4/redis-adapter/
 
 ```js
-import { serve } from "https://deno.land/std/http/server.ts";
+import { serve } from "https://deno.land/std@0.220.1/http/server.ts";
 import {
   createRedisAdapter,
   createRedisClient,
   Server,
-} from "https://deno.land/x/socket_io/mod.ts";
+} from "https://deno.land/x/socket_io@0.2.0/mod.ts";
 
 const [pubClient, subClient] = await Promise.all([
   createRedisClient({

@@ -287,7 +287,7 @@ export class BroadcastOperator<EmitEvents extends EventsMap, SocketData>
    *   socket.disconnect();
    * }
    */
-  public fetchSockets<SocketData = unknown>(): Promise<
+  public fetchSockets<SocketData = Record<string, any>>(): Promise<
     RemoteSocket<EmitEvents, SocketData>[]
   > {
     return this.adapter

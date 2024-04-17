@@ -46,7 +46,7 @@ function utf8Length(str: string) {
 type DeferredElement = {
   _str?: string;
   _float?: number;
-  _bin?: ArrayBuffer;
+  _bin?: ArrayBuffer | ArrayBufferLike;
   _length: number;
   _offset: number;
 };
@@ -60,7 +60,7 @@ function _encodeObject(
     return _encode(bytes, defers, (value.toJSON as unknown as () => unknown)());
   }
 
-  const keys = [];
+  const keys: any[] = [];
   let key: string;
 
   const allKeys = Object.keys(value);

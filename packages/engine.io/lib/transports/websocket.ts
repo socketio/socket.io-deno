@@ -16,7 +16,7 @@ export class WS extends Transport {
   public send(packets: Packet[]) {
     for (const packet of packets) {
       Parser.encodePacket(packet, true, (data: RawData) => {
-        if (this.writable) {
+        if (this.writable && this.readyState === "open") {
           this.socket?.send(data);
         }
       });

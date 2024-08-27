@@ -23,13 +23,6 @@ export class ParentNamespace<
     server: Server<ListenEvents, EmitEvents, ServerSideEvents, SocketData>,
   ) {
     super(server, "/_" + ParentNamespace.count++);
-    // this.adapter = {
-    //   broadcast(packet: Packet, opts: BroadcastOptions) {
-    //     this.children.forEach((nsp: Namespace) => {
-    //       nsp.adapter.broadcast(packet, opts);
-    //     });
-    //   }
-    // };
   }
 
   public emit<Ev extends EventNames<EmitEvents>>(

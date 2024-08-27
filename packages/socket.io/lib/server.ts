@@ -45,9 +45,9 @@ export interface ServerOptions {
 }
 
 export interface ServerReservedEvents<
-  ListenEvents,
-  EmitEvents,
-  ServerSideEvents,
+  ListenEvents extends EventsMap,
+  EmitEvents extends EventsMap,
+  ServerSideEvents extends EventsMap,
   SocketData,
 > extends
   NamespaceReservedEvents<

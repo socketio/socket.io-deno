@@ -1,8 +1,15 @@
 # Releases
 
+- [0.2.1](#021-2024-08-27) (2024-08-27)
 - [0.2.0](#020-2022-10-11) (2022-10-11)
 - [0.1.1](#011-2022-09-14) (2022-09-14)
 - [0.1.0](#010-2022-09-12) (2022-09-12)
+
+# [0.2.1](https://github.com/itsfuad/socket.io-deno/compare/0.2.0...0.2.1) (2024-08-27)
+
+### Bug Fixes
+
+- **engine:** Add check for readyState before sending packets
 
 # [0.2.0](https://github.com/socketio/socket.io-deno/compare/0.1.1...0.2.0) (2022-10-11)
 

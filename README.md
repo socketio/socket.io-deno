@@ -24,7 +24,7 @@ Table of content:
 ## Usage
 
 ```ts
-import { Server } from "https://deno.land/x/socket_io@0.2.0/mod.ts";
+import { Server } from "https://deno.land/x/socket_io@0.2.1/mod.ts";
 
 const io = new Server();
 

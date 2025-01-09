@@ -32,7 +32,7 @@ export class ParentNamespace<
     // };
   }
 
-  public emit<Ev extends EventNames<EmitEvents>>(
+  override emit<Ev extends EventNames<EmitEvents>>(
     ev: Ev,
     ...args: EventParams<EmitEvents, Ev>
   ): boolean {

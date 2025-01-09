@@ -258,13 +258,14 @@ export class Namespace<
     try {
       await this.run(socket);
     } catch (err) {
+      const e = err as Error & { data: string };
       getLogger("socket.io").debug(
         "[namespace] middleware error, sending CONNECT_ERROR packet to the client",
       );
       socket._cleanup();
       return socket._error({
-        message: err.message || err,
-        data: err.data,
+        message: e.message || err as string,
+        data: e.data,
       });
     }
 

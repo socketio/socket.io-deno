@@ -8,7 +8,7 @@ import {
   BufWriter,
 } from "./vendor/https/deno.land/std/io/buffer.ts";
 import { delay } from "./vendor/https/deno.land/std/async/delay.ts";
-type Closer = Deno.Closer;
+type Closer = { close: () => void };
 
 export interface Connection {
   closer: Closer;

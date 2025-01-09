@@ -167,7 +167,11 @@ export class Server extends EventEmitter<
 
     try {
       await this.verify(req, url);
-    } catch ({ code, context }) {
+    } catch (err) {
+      const { code, context } = err as {
+        code: ERROR_CODES;
+        context: Record<string, unknown>;
+      };
       const message = ERROR_MESSAGES.get(code)!;
       this.emitReserved("connection_error", {
         req,

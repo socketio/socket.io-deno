@@ -4,11 +4,17 @@ import { type Namespace } from "./namespace.ts";
 import { type Packet } from "../../socket.io-parser/mod.ts";
 import { generateId } from "../../engine.io/mod.ts";
 import { getLogger } from "../../../deps.ts";
+import { yeast } from "./contrib/yeast.ts";
 
 const DEFAULT_TIMEOUT_MS = 5000;
 
 export type SocketId = string;
 export type Room = string | number;
+/**
+ * A private ID, sent by the server at the beginning of the Socket.IO session and used for connection state recovery
+ * upon reconnection
+ */
+export type PrivateSessionId = string | undefined;
 
 export interface BroadcastOptions {
   rooms: Set<Room>;
@@ -23,6 +29,16 @@ export interface BroadcastFlags {
   timeout?: number;
 }
 
+
+interface SessionToPersist {
+  sid: SocketId;
+  pid: PrivateSessionId;
+  rooms: Room[];
+  data: unknown;
+}
+
+export type Session = SessionToPersist & { missedPackets: unknown[][] };
+
 interface AdapterEvents {
   "create-room": (room: Room) => void;
   "delete-room": (room: Room) => void;
@@ -31,7 +47,7 @@ interface AdapterEvents {
   "error": (err: Error) => void;
 }
 
-export class InMemoryAdapter extends EventEmitter<
+export abstract class InMemoryAdapter extends EventEmitter<
   Record<never, never>,
   Record<never, never>,
   AdapterEvents
@@ -375,7 +391,7 @@ function serializeSocket(socket: Socket) {
   };
 }
 
-export abstract class Adapter extends InMemoryAdapter {
+export class Adapter extends InMemoryAdapter {
   protected readonly uid: string;
 
   #pendingRequests = new Map<
@@ -388,7 +404,7 @@ export abstract class Adapter extends InMemoryAdapter {
     AckRequest
   >();
 
-  protected constructor(nsp: Namespace) {
+  constructor(nsp: Namespace) {
     super(nsp);
     this.uid = generateId();
   }
@@ -399,12 +415,12 @@ export abstract class Adapter extends InMemoryAdapter {
    * @param request
    * @protected
    */
-  protected abstract publishRequest(request: ClusterRequest): void;
+  protected publishRequest(_request: ClusterRequest): void { }
 
-  protected abstract publishResponse(
-    requesterUid: string,
-    response: ClusterResponse,
-  ): void;
+  protected publishResponse(
+    _requesterUid: string,
+    _response: ClusterResponse,
+  ): void { }
 
   override addSockets(opts: BroadcastOptions, rooms: Room[]) {
     super.addSockets(opts, rooms);
@@ -867,4 +883,133 @@ export abstract class Adapter extends InMemoryAdapter {
         break;
     }
   }
+
+  /**
+   * Save the client session in order to restore it upon reconnection.
+   */
+  public persistSession(_session: SessionToPersist) { }
+
+  /**
+   * Restore the session and find the packets that were missed by the client.
+   * @param pid
+   * @param offset
+   */
+  public restoreSession(
+    _pid: PrivateSessionId,
+    _offset: string
+  ): Promise<Session | null> {
+    return Promise.resolve(null);
+  }
+}
+
+interface PersistedPacket {
+  id: string;
+  emittedAt: number;
+  data: unknown[];
+  opts: BroadcastOptions;
+}
+
+type SessionWithTimestamp = SessionToPersist & { disconnectedAt: number };
+
+export class SessionAwareAdapter extends Adapter {
+  private readonly maxDisconnectionDuration: number;
+
+  private sessions: Map<PrivateSessionId, SessionWithTimestamp> = new Map();
+  private packets: PersistedPacket[] = [];
+
+  constructor(readonly nsp: Namespace) {
+    super(nsp);
+    // FIXME: Add conditional typing for server options
+    this.maxDisconnectionDuration = nsp._server.opts.connectionStateRecovery?.maxDisconnectionDuration || 2 * 60 * 1000;
+    getLogger("socket.io").debug(`[adapter] Create a session persist adapter`);
+    const timerId = setInterval(() => {
+      const threshold = Date.now() - this.maxDisconnectionDuration;
+      this.sessions.forEach((session, sessionId) => {
+        const hasExpired = session.disconnectedAt < threshold;
+        if (hasExpired) {
+          this.sessions.delete(sessionId);
+        }
+      });
+      for (let i = this.packets.length - 1; i >= 0; i--) {
+        const hasExpired = this.packets[i].emittedAt < threshold;
+        if (hasExpired) {
+          this.packets.splice(0, i + 1);
+          break;
+        }
+      }
+    }, 60 * 1000);
+    // prevents the timer from keeping the process alive
+    clearTimeout(timerId)
+  }
+
+  override persistSession(session: SessionToPersist) {
+    (session as SessionWithTimestamp).disconnectedAt = Date.now();
+    this.sessions.set(session.pid, session as SessionWithTimestamp);
+  }
+
+  override restoreSession(
+    pid: PrivateSessionId,
+    offset: string
+  ): Promise<Session|null> {
+    const session = this.sessions.get(pid);
+    if (!session) {
+      // the session may have expired
+      return Promise.resolve(null);
+    }
+    const hasExpired =
+      session.disconnectedAt + this.maxDisconnectionDuration < Date.now();
+    if (hasExpired) {
+      // the session has expired
+      this.sessions.delete(pid);
+      return Promise.resolve(null);
+    }
+    const index = this.packets.findIndex((packet) => packet.id === offset);
+    if (index === -1) {
+      // the offset may be too old
+      return Promise.resolve(null);
+    }
+    const missedPackets = [];
+    for (let i = index + 1; i < this.packets.length; i++) {
+      const packet = this.packets[i];
+      if (shouldIncludePacket(session.rooms, packet.opts)) {
+        missedPackets.push(packet.data);
+      }
+    }
+    return Promise.resolve({
+      ...session,
+      missedPackets,
+    });
+  }
+
+  override broadcast(packet: any, opts: BroadcastOptions) {
+    const isEventPacket = packet.type === 2;
+    // packets with acknowledgement are not stored because the acknowledgement function cannot be serialized and
+    // restored on another server upon reconnection
+    const withoutAcknowledgement = packet.id === undefined;
+    const notVolatile = opts.flags?.volatile === undefined;
+    if (isEventPacket && withoutAcknowledgement && notVolatile) {
+      const id = yeast();
+      // the offset is stored at the end of the data array, so the client knows the ID of the last packet it has
+      // processed (and the format is backward-compatible)
+      packet.data.push(id);
+      this.packets.push({
+        id,
+        opts,
+        data: packet.data,
+        emittedAt: Date.now(),
+      });
+    }
+    super.broadcast(packet, opts);
+  }
+}
+
+
+function shouldIncludePacket(
+  sessionRooms: Room[],
+  opts: BroadcastOptions
+): boolean {
+  const included =
+    opts.rooms.size === 0 || sessionRooms.some((room) => opts.rooms.has(room));
+  const notExcluded = sessionRooms.every((room) => !opts.except.has(room));
+  return included && notExcluded;
 }

@@ -144,12 +144,13 @@ describe("event", () => {
           socket.timeout(0).emit("echo", 42, (err: Error) => {
             assertIsError(err);
 
-            setTimeout(done, 10);
+            setTimeout(done, 20);
           });
         });
 
         const [sid] = await runHandshake(port);
-        await eioPush(port, sid, "430[]");
+
+        setTimeout(() => eioPush(port, sid, "430[]"), 10);
       },
     );
   });

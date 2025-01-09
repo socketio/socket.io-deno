@@ -13,7 +13,6 @@ A clear and concise description of what the bug is.
 **To Reproduce**
 
 ```ts
-import { serve } from "https://deno.land/std@a.b.c/http/server.ts";
 import { Server } from "https://deno.land/x/socket_io@x.y.z/mod.ts";
 
 const io = new Server();
@@ -28,7 +27,8 @@ io.on("connection", (socket) => {
   });
 });
 
-await serve(io.handler(), {
+Deno.serve({
+  handler: io.handler(),
   port: 3000,
 });
 ```

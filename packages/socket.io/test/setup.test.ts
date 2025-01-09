@@ -1,5 +1,4 @@
 import { Server } from "../lib/server.ts";
-import { serve } from "../../../test_deps.ts";
 import { createPartialDone } from "../../util.test.ts";
 
 export function setup(
@@ -10,7 +9,8 @@ export function setup(
   return new Promise((resolve, reject) => {
     const abortController = new AbortController();
 
-    serve(server.handler(), {
+    Deno.serve({
+      handler: server.handler(),
       onListen: ({ port }) => {
         const partialDone = createPartialDone(count, () => {
           setTimeout(() => {

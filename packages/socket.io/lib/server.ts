@@ -9,7 +9,7 @@ import {
   EventParams,
   EventsMap,
 } from "../../event-emitter/mod.ts";
-import { getLogger, type Handler } from "../../../deps.ts";
+import { getLogger } from "../../../deps.ts";
 import { Client } from "./client.ts";
 import { Decoder, Encoder } from "../../socket.io-parser/mod.ts";
 import { Namespace, NamespaceReservedEvents } from "./namespace.ts";
@@ -75,7 +75,6 @@ type ParentNspNameMatchFn = (
  * Represents a Socket.IO server.
  *
  * @example
- * import { serve } from "https://deno.land/std@a.b.c/http/server.ts";
  * import { Server } from "https://deno.land/x/socket_io@x.y.z/mod.ts";
  *
  * const io = new Server();
@@ -96,7 +95,8 @@ type ParentNspNameMatchFn = (
  *   });
  * });
  *
- * await serve(io.handler(), {
+ * Deno.serve({
+ *   handler: io.handler(),
  *   port: 3000,
  * });
  */
@@ -183,18 +183,18 @@ export class Server<
    * Returns a request handler.
    *
    * @example
-   * import { serve } from "https://deno.land/std@a.b.c/http/server.ts";
    * import { Server } from "https://deno.land/x/socket_io@x.y.z/mod.ts";
    *
    * const io = new Server();
    *
-   * await serve(io.handler(), {
+   * Deno.serve({
+   *   handler: io.handler(),
    *   port: 3000,
    * });
    *
    * @param additionalHandler - another handler which will receive the request if the path does not match
    */
-  public handler(additionalHandler?: Handler) {
+  public handler(additionalHandler?: Deno.ServeHandler) {
     return this.engine.handler(additionalHandler);
   }
 
@@ -296,13 +296,13 @@ export class Server<
    * Closes the server.
    *
    * @example
-   * import { serve } from "https://deno.land/std@a.b.c/http/server.ts";
    * import { Server } from "https://deno.land/x/socket_io@x.y.z/mod.ts";
    *
    * const io = new Server();
    * const abortController = new AbortController();
    *
-   * await serve(io.handler(), {
+   * Deno.serve({
+   *   handler: io.handler(),
    *   port: 3000,
    *   signal: abortController.signal,
    *   onListen: () => {
@@ -310,7 +310,7 @@ export class Server<
    *       // close the HTTP server
    *       abortController.abort();
    *       // close the Socket.IO server
-   *       server.close();
+   *       io.close();
    *     }, 10000);
    *   }
    * });

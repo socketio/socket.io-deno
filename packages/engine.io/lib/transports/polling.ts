@@ -47,11 +47,6 @@ export class Polling extends Transport {
       );
     }
 
-    req.signal.addEventListener("abort", () => {
-      // note: this gets never triggered
-      this.onError("poll connection closed prematurely");
-    });
-
     getLogger("engine.io").debug(
       "[polling] new polling request",
     );
@@ -75,11 +70,6 @@ export class Polling extends Transport {
     req: Request,
     responseHeaders: Headers,
   ): Promise<Response> {
-    req.signal.addEventListener("abort", () => {
-      // note: this gets never triggered
-      this.onError("data request connection closed prematurely");
-    });
-
     getLogger("engine.io").debug(
       "[polling] new data request",
     );

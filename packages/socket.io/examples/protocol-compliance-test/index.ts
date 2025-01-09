@@ -1,4 +1,3 @@
-import { serve } from "../../../../test_deps.ts";
 import { Server } from "../../mod.ts";
 
 const io = new Server({
@@ -28,6 +27,7 @@ io.of("/custom").on("connection", (socket) => {
   socket.emit("auth", socket.handshake.auth);
 });
 
-await serve(io.handler(), {
+Deno.serve({
+  handler: io.handler(),
   port: 3000,
 });

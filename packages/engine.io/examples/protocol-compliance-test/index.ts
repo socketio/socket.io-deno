@@ -1,4 +1,3 @@
-import { serve } from "../../../../test_deps.ts";
 import { Server } from "../../mod.ts";
 
 const engine = new Server({
@@ -17,6 +16,7 @@ engine.on("connection", (socket) => {
   });
 });
 
-await serve(engine.handler(), {
+Deno.serve({
+  handler: engine.handler(),
   port: 3000,
 });

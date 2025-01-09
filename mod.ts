@@ -1,6 +1,5 @@
 /**
  * @example
- * import { serve } from "https://deno.land/std@a.b.c/http/server.ts";
  * import { Server } from "https://deno.land/x/socket_io@x.y.z/mod.ts";
  *
  * const io = new Server();
@@ -21,7 +20,8 @@
  *   });
  * });
  *
- * await serve(io.handler(), {
+ * Deno.serve({
+ *   handler: io.handler(),
  *   port: 3000,
  * });
  */
@@ -40,7 +40,6 @@ export {
  * Documentation: https://socket.io/docs/v4/redis-adapter/
  *
  * @example
- * import { serve } from "https://deno.land/std/http/server.ts";
  * import { Server, createRedisAdapter, createRedisClient } from "https://deno.land/x/socket_io/mod.ts";
  *
  * const [pubClient, subClient] = await Promise.all([
@@ -56,8 +55,9 @@ export {
  *     adapter: createRedisAdapter(pubClient, subClient)
  * });
  *
- * await serve(io.handler(), {
- *     port: 3000
+ * Deno.serve({
+ *   handler: io.handler(),
+ *   port: 3000
  * });
  */
 export {

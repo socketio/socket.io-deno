@@ -2,7 +2,6 @@ import { Server, Socket } from "../../socket.io/mod.ts";
 import { createPartialDone, runHandshake, waitFor } from "../../util.test.ts";
 import { connect } from "../../../vendor/deno.land/x/redis@v0.27.1/mod.ts";
 import { createAdapter } from "../mod.ts";
-import { serve } from "../../../test_deps.ts";
 
 function createRedisClient() {
   return connect({
@@ -29,7 +28,8 @@ function createServer(port: number): Promise<TestServer> {
 
         const abortController = new AbortController();
 
-        return serve(io.handler(), {
+        return Deno.serve({
+          handler: io.handler(),
           port,
           signal: abortController.signal,
           onListen: async () => {

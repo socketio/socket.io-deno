@@ -1,4 +1,4 @@
-import { ConnInfo, getLogger, Handler } from "../../../deps.ts";
+import { getLogger } from "../../../deps.ts";
 import { EventEmitter } from "../../event-emitter/mod.ts";
 import { Socket } from "./socket.ts";
 import { Polling } from "./transports/polling.ts";
@@ -41,7 +41,7 @@ export interface ServerOptions {
    */
   allowRequest?: (
     req: Request,
-    connInfo: ConnInfo,
+    connInfo: Deno.ServeHandlerInfo,
   ) => Promise<void>;
   /**
    * The options related to Cross-Origin Resource Sharing (CORS)
@@ -53,7 +53,7 @@ export interface ServerOptions {
   editHandshakeHeaders?: (
     responseHeaders: Headers,
     req: Request,
-    connInfo: ConnInfo,
+    connInfo: Deno.ServeHandlerInfo,
   ) => void | Promise<void>;
   /**
    * A function that allows to edit the response headers of all requests
@@ -61,7 +61,7 @@ export interface ServerOptions {
   editResponseHeaders?: (
     responseHeaders: Headers,
     req: Request,
-    connInfo: ConnInfo,
+    connInfo: Deno.ServeHandlerInfo,
   ) => void | Promise<void>;
 }
 
@@ -73,7 +73,11 @@ interface ConnectionError {
 }
 
 interface ServerReservedEvents {
-  connection: (socket: Socket, request: Request, connInfo: ConnInfo) => void;
+  connection: (
+    socket: Socket,
+    request: Request,
+    connInfo: Deno.ServeHandlerInfo,
+  ) => void;
   connection_error: (err: ConnectionError) => void;
 }
 
@@ -124,8 +128,11 @@ export class Server extends EventEmitter<
    *
    * @param additionalHandler - another handler which will receive the request if the path does not match
    */
-  public handler(additionalHandler?: Handler) {
-    return (req: Request, connInfo: ConnInfo): Response | Promise<Response> => {
+  public handler(additionalHandler?: Deno.ServeHandler) {
+    return (
+      req: Request,
+      connInfo: Deno.ServeHandlerInfo,
+    ): Response | Promise<Response> => {
       const url = new URL(req.url);
       if (url.pathname === this.opts.path) {
         return this.handleRequest(req, connInfo, url);
@@ -147,7 +154,7 @@ export class Server extends EventEmitter<
    */
   private async handleRequest(
     req: Request,
-    connInfo: ConnInfo,
+    connInfo: Deno.ServeHandlerInfo,
     url: URL,
   ): Promise<Response> {
     getLogger("engine.io").debug(`[server] handling ${req.method} ${req.url}`);
@@ -321,7 +328,7 @@ export class Server extends EventEmitter<
    */
   private async handshake(
     req: Request,
-    connInfo: ConnInfo,
+    connInfo: Deno.ServeHandlerInfo,
     responseHeaders: Headers,
   ): Promise<Response> {
     const id = generateId();

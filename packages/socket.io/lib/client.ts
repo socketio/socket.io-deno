@@ -1,7 +1,7 @@
 import { EventsMap } from "../../event-emitter/mod.ts";
 import { Decoder, Packet, PacketType } from "../../socket.io-parser/mod.ts";
 import { type Socket as RawSocket } from "../../engine.io/mod.ts";
-import { ConnInfo, getLogger } from "../../../deps.ts";
+import { getLogger } from "../../../deps.ts";
 import { Handshake, Socket } from "./socket.ts";
 import { Server } from "./server.ts";
 import { RawData } from "../../engine.io-parser/mod.ts";
@@ -43,7 +43,7 @@ export class Client<
     decoder: Decoder,
     conn: RawSocket,
     req: Request,
-    connInfo: ConnInfo,
+    connInfo: Deno.ServeHandlerInfo,
   ) {
     this.server = server;
     this.decoder = decoder;

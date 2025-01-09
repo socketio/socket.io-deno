@@ -36,7 +36,7 @@ export class Polling extends Transport {
    * @private
    */
   private onPollRequest(
-    req: Request,
+    _req: Request,
     responseHeaders: Headers,
   ): Promise<Response> {
     if (this.pollingPromise) {

@@ -181,7 +181,7 @@ export class Socket<
    */
   public connected = false;
 
-  private readonly nsp: Namespace<
+  public readonly nsp: Namespace<
     ListenEvents,
     EmitEvents,
     ServerSideEvents,

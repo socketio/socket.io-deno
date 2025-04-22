@@ -1,0 +1,11 @@
+{
+  "name": "@muni-town-temp/socket-io-server",
+  "version": "0.2.2-preview.1",
+  "exports": "./mod.ts",
+  "imports": {
+    "@std/async": "jsr:@std/async@1.0.2",
+    "@std/io": "jsr:@std/io@0.225.2",
+    "@std/testing": "jsr:@std/testing@1.0.11",
+    "@std/log": "jsr:@std/log@0.224.14"
+  }
+}

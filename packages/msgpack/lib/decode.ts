@@ -44,7 +44,7 @@ function utf8Read(view: DataView, offset: number, length: number) {
 
 class Decoder {
   public _offset = 0;
-  private readonly _buffer: ArrayBuffer;
+  private readonly _buffer: ArrayBufferLike;
   private readonly _view: DataView;
 
   constructor(buffer: ArrayBuffer | ArrayBufferView) {

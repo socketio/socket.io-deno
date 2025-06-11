@@ -60,7 +60,7 @@ export const Parser = {
           data.byteOffset,
           data.byteLength,
         );
-        return callback("b" + encodeToBase64(array));
+        return callback("b" + encodeToBase64(array.buffer as ArrayBuffer));
       }
     }
     // plain string

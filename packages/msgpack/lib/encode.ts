@@ -46,7 +46,7 @@ function utf8Length(str: string) {
 type DeferredElement = {
   _str?: string;
   _float?: number;
-  _bin?: ArrayBuffer;
+  _bin?: ArrayBufferLike;
   _length: number;
   _offset: number;
 };

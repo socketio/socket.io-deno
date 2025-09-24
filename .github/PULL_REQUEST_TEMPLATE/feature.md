@@ -1,9 +1,9 @@
 ---
 name: Feature implementation
 about: A new awesome feature
-title: ''
-labels: 'enhancement'
-assignees: ''
+title: ""
+labels: "enhancement"
+assignees: ""
 ---
 
 Related issue or discussion:

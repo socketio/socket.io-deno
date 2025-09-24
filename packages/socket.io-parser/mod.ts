@@ -22,7 +22,11 @@ export interface Packet {
   attachments?: number;
 }
 
-type Attachments = ArrayBuffer | ArrayBufferView | Blob;
+type Attachments =
+  | ArrayBuffer
+  // @ts-ignore ArrayBufferView is not generic in Deno v1
+  | ArrayBufferView<ArrayBuffer>
+  | Blob;
 
 export class Encoder {
   public encode(packet: Packet): RawData[] {

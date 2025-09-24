@@ -12,7 +12,12 @@ export type PacketType =
   | "noop"
   | "error";
 
-export type RawData = string | ArrayBuffer | ArrayBufferView | Blob;
+export type RawData =
+  | string
+  | ArrayBuffer
+  // @ts-ignore ArrayBufferView is not generic in Deno v1
+  | ArrayBufferView<ArrayBuffer>
+  | Blob;
 
 export interface Packet {
   type: PacketType;

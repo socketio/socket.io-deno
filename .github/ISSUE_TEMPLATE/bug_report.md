@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
-labels: 'to triage'
-assignees: ''
+title: ""
+labels: "to triage"
+assignees: ""
 ---
 
 **Describe the bug**

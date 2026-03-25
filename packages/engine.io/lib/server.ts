@@ -162,14 +162,16 @@ export class Server extends EventEmitter<
     const responseHeaders = new Headers();
     if (this.opts.cors) {
       addCorsHeaders(responseHeaders, this.opts.cors, req);
-
-      if (req.method === "OPTIONS") {
-        return new Response(null, { status: 204, headers: responseHeaders });
-      }
     }
 
     if (this.opts.editResponseHeaders) {
       await this.opts.editResponseHeaders(responseHeaders, req, connInfo);
+    }
+
+    if (this.opts.cors) {
+      if (req.method === "OPTIONS") {
+        return new Response(null, { status: 204, headers: responseHeaders });
+      }
     }
 
     try {
@@ -278,20 +280,26 @@ export class Server extends EventEmitter<
         });
       }
       const previousTransport = client.transport.name;
-      if (previousTransport === "websocket") {
+      const isUpgradeRequest = req.headers.has("upgrade");
+      const isValidUpgrade = previousTransport === "polling" &&
+        transport === "websocket" &&
+        isUpgradeRequest;
+
+      if (
+        previousTransport === "websocket" ||
+        (!isValidUpgrade && transport !== previousTransport)
+      ) {
         getLogger("engine.io").debug(
           "[server] unexpected transport without upgrade",
         );
-        return Promise.reject(
-          {
-            code: ERROR_CODES.BAD_REQUEST,
-            context: {
-              name: "TRANSPORT_MISMATCH",
-              transport,
-              previousTransport,
-            },
+        return Promise.reject({
+          code: ERROR_CODES.BAD_REQUEST,
+          context: {
+            name: "TRANSPORT_MISMATCH",
+            transport,
+            previousTransport,
           },
-        );
+        });
       }
     } else {
       // handshake is GET only

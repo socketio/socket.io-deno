@@ -143,46 +143,75 @@ describe("handshake", () => {
         partialDone();
       },
     );
+  });
 
-    it("should reconnect to a namespace after a client-side namespace disconnect", () => {
-      const io = new Server();
-      io.of("/custom");
+  it("should reconnect to a namespace after a client-side namespace disconnect", () => {
+    const io = new Server();
+    io.of("/custom");
 
-      return setup(
-        io,
-        1,
-        async (port, done) => {
-          const response = await fetch(
-            `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
-            {
-              method: "get",
-            },
-          );
-
-          assertEquals(response.status, 200);
-
-          const sid = await parseSessionID(response);
-
-          await eioPush(port, sid, "40/custom,");
-          const firstConnectBody = await eioPoll(port, sid);
-          assertEquals(firstConnectBody.startsWith("40/custom,{"), true);
-
-          await eioPush(port, sid, "41/custom,");
-
-          await eioPush(port, sid, "40/custom,");
-          const secondConnectBody = await eioPoll(port, sid);
-          assertEquals(secondConnectBody.startsWith("40/custom,{"), true);
-
-          done();
+    return setup(io, 1, async (port, done) => {
+      const response = await fetch(
+        `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
+        {
+          method: "get",
         },
       );
+
+      assertEquals(response.status, 200);
+
+      const sid = await parseSessionID(response);
+
+      await eioPush(port, sid, "40/custom,");
+      const firstConnectBody = await eioPoll(port, sid);
+      assertEquals(firstConnectBody.startsWith("40/custom,{"), true);
+
+      await eioPush(port, sid, "41/custom,");
+
+      await eioPush(port, sid, "40/custom,");
+      const secondConnectBody = await eioPoll(port, sid);
+      assertEquals(secondConnectBody.startsWith("40/custom,{"), true);
+
+      done();
     });
+  });
 
-    it("should trigger a connection event (custom namespace)", () => {
-      const io = new Server();
+  it("should trigger a connection event (custom namespace)", () => {
+    const io = new Server();
 
-      return setup(io, 2, async (port, partialDone) => {
-        io.of("/custom").on("connection", (socket) => {
+    return setup(io, 2, async (port, partialDone) => {
+      io.of("/custom").on("connection", (socket) => {
+        assertExists(socket.id);
+        partialDone();
+      });
+
+      const response = await fetch(
+        `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
+        {
+          method: "get",
+        },
+      );
+
+      assertEquals(response.status, 200);
+
+      const sid = await parseSessionID(response);
+
+      await eioPush(port, sid, "40/custom,");
+
+      const body = await eioPoll(port, sid);
+      assertEquals(body.startsWith("40/custom,{"), true);
+
+      partialDone();
+    });
+  });
+
+  it("should trigger a connection event (dynamic namespace)", () => {
+    const io = new Server();
+
+    return setup(
+      io,
+      2,
+      async (port, partialDone) => {
+        io.of(/^\/dynamic-\d+$/).on("connection", (socket) => {
           assertExists(socket.id);
           partialDone();
         });
@@ -198,99 +227,66 @@ describe("handshake", () => {
 
         const sid = await parseSessionID(response);
 
-        await eioPush(port, sid, "40/custom,");
+        await eioPush(port, sid, "40/dynamic-101,");
 
         const body = await eioPoll(port, sid);
-        assertEquals(body.startsWith("40/custom,{"), true);
+        assertEquals(body.startsWith("40/dynamic-101,{"), true);
 
         partialDone();
-      });
-    });
+      },
+    );
+  });
 
-    it("should trigger a connection event (dynamic namespace)", () => {
-      const io = new Server();
+  it("should return an error when reaching a non-existent namespace", () => {
+    const io = new Server();
 
-      return setup(
-        io,
-        2,
-        async (port, partialDone) => {
-          io.of(/^\/dynamic-\d+$/).on("connection", (socket) => {
-            assertExists(socket.id);
-            partialDone();
-          });
+    return setup(
+      io,
+      1,
+      async (port, done) => {
+        const response = await fetch(
+          `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
+          {
+            method: "get",
+          },
+        );
 
-          const response = await fetch(
-            `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
-            {
-              method: "get",
-            },
-          );
+        const sid = await parseSessionID(response);
 
-          assertEquals(response.status, 200);
+        await eioPush(port, sid, "40/unknown,");
 
-          const sid = await parseSessionID(response);
+        const body = await eioPoll(port, sid);
 
-          await eioPush(port, sid, "40/dynamic-101,");
+        assertEquals(body, '44/unknown,{"message":"Invalid namespace"}');
 
-          const body = await eioPoll(port, sid);
-          assertEquals(body.startsWith("40/dynamic-101,{"), true);
+        done();
+      },
+    );
+  });
 
-          partialDone();
-        },
-      );
-    });
+  it("should complete handshake before sending any event", () => {
+    const io = new Server();
 
-    it("should return an error when reaching a non-existent namespace", () => {
-      const io = new Server();
+    return setup(
+      io,
+      1,
+      async (port, done) => {
+        io.use((socket) => {
+          socket.emit("1");
+          io.emit("ignored"); // socket is not connected yet
+          return Promise.resolve();
+        });
 
-      return setup(
-        io,
-        1,
-        async (port, done) => {
-          const response = await fetch(
-            `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
-            {
-              method: "get",
-            },
-          );
+        io.on("connection", (socket) => {
+          socket.emit("2");
+        });
 
-          const sid = await parseSessionID(response);
+        const [_, firstPacket] = await runHandshake(port);
 
-          await eioPush(port, sid, "40/unknown,");
+        assertEquals(firstPacket, '42["1"]\x1e42["2"]');
 
-          const body = await eioPoll(port, sid);
-
-          assertEquals(body, '44/unknown,{"message":"Invalid namespace"}');
-
-          done();
-        },
-      );
-    });
-
-    it("should complete handshake before sending any event", () => {
-      const io = new Server();
-
-      return setup(
-        io,
-        1,
-        async (port, done) => {
-          io.use((socket) => {
-            socket.emit("1");
-            io.emit("ignored"); // socket is not connected yet
-            return Promise.resolve();
-          });
-
-          io.on("connection", (socket) => {
-            socket.emit("2");
-          });
-
-          const [_, firstPacket] = await runHandshake(port);
-
-          assertEquals(firstPacket, '42["1"]\x1e42["2"]');
-
-          done();
-        },
-      );
-    });
+        done();
+      },
+    );
   });
 });

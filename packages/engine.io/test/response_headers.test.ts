@@ -65,4 +65,34 @@ describe("response headers", () => {
       socket.onopen = done;
     });
   });
+
+  it("should send custom response headers for preflight requests", () => {
+    const engine = new Server({
+      cors: {
+        origin: ["https://example.com"],
+      },
+      editResponseHeaders: (responseHeaders) => {
+        responseHeaders.set("x-test", "123");
+      },
+    });
+
+    return setup(engine, 1, async (port, done) => {
+      const response = await fetch(
+        `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
+        {
+          method: "OPTIONS",
+          headers: {
+            origin: "https://example.com",
+          },
+        },
+      );
+
+      assertEquals(response.status, 204);
+      assertEquals(response.headers.get("x-test"), "123");
+
+      await response.body?.cancel();
+
+      done();
+    });
+  });
 });

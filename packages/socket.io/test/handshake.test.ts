@@ -145,37 +145,63 @@ describe("handshake", () => {
     );
   });
 
+  it("should reconnect to a namespace after a client-side namespace disconnect", () => {
+    const io = new Server();
+    io.of("/custom");
+
+    return setup(io, 1, async (port, done) => {
+      const response = await fetch(
+        `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
+        {
+          method: "get",
+        },
+      );
+
+      assertEquals(response.status, 200);
+
+      const sid = await parseSessionID(response);
+
+      await eioPush(port, sid, "40/custom,");
+      const firstConnectBody = await eioPoll(port, sid);
+      assertEquals(firstConnectBody.startsWith("40/custom,{"), true);
+
+      await eioPush(port, sid, "41/custom,");
+
+      await eioPush(port, sid, "40/custom,");
+      const secondConnectBody = await eioPoll(port, sid);
+      assertEquals(secondConnectBody.startsWith("40/custom,{"), true);
+
+      done();
+    });
+  });
+
   it("should trigger a connection event (custom namespace)", () => {
     const io = new Server();
 
-    return setup(
-      io,
-      2,
-      async (port, partialDone) => {
-        io.of("/custom").on("connection", (socket) => {
-          assertExists(socket.id);
-          partialDone();
-        });
-
-        const response = await fetch(
-          `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
-          {
-            method: "get",
-          },
-        );
-
-        assertEquals(response.status, 200);
-
-        const sid = await parseSessionID(response);
-
-        await eioPush(port, sid, "40/custom,");
-
-        const body = await eioPoll(port, sid);
-        assertEquals(body.startsWith("40/custom,{"), true);
-
+    return setup(io, 2, async (port, partialDone) => {
+      io.of("/custom").on("connection", (socket) => {
+        assertExists(socket.id);
         partialDone();
-      },
-    );
+      });
+
+      const response = await fetch(
+        `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
+        {
+          method: "get",
+        },
+      );
+
+      assertEquals(response.status, 200);
+
+      const sid = await parseSessionID(response);
+
+      await eioPush(port, sid, "40/custom,");
+
+      const body = await eioPoll(port, sid);
+      assertEquals(body.startsWith("40/custom,{"), true);
+
+      partialDone();
+    });
   });
 
   it("should trigger a connection event (dynamic namespace)", () => {

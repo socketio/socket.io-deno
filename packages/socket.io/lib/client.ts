@@ -49,15 +49,7 @@ export class Client<
     this.decoder = decoder;
     this.conn = conn;
 
-    const url = new URL(req.url);
-    this.handshake = {
-      url: url.pathname,
-      headers: req.headers,
-      query: url.searchParams,
-      address: (connInfo.remoteAddr as Deno.NetAddr).hostname,
-      secure: false,
-      xdomain: req.headers.has("origin"),
-    };
+    this.handshake = createHandshakeBase(req, connInfo);
 
     conn.on("message", (data) => this.decoder.add(data));
     conn.on("close", (reason) => this.onclose(reason));
@@ -171,7 +163,7 @@ export class Client<
   _remove(
     socket: Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData>,
   ): void {
-    this.sockets.delete(socket.id);
+    this.sockets.delete(socket.nsp.name);
   }
 
   private close() {
@@ -234,4 +226,21 @@ export class Client<
       this.conn.send(encodedPacket);
     }
   }
+}
+
+export function createHandshakeBase(
+  req: Request,
+  connInfo: Deno.ServeHandlerInfo,
+): Omit<Handshake, "issued" | "time" | "auth"> {
+  const url = new URL(req.url);
+  const origin = req.headers.get("origin");
+
+  return {
+    url: url.pathname,
+    headers: req.headers,
+    query: url.searchParams,
+    address: (connInfo.remoteAddr as Deno.NetAddr).hostname,
+    secure: url.protocol === "https:",
+    xdomain: origin !== null && origin !== url.origin,
+  };
 }

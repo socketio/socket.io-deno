@@ -177,69 +177,61 @@ describe("verification", () => {
   it("should disallow invalid handshake method", () => {
     const engine = new Server();
 
-    return setup(
-      engine,
-      2,
-      async (port, partialDone) => {
-        engine.on("connection_error", (err) => {
-          assertExists(err.req);
-          assertEquals(err.code, 2);
-          assertEquals(err.message, "Bad handshake method");
-          assertEquals(err.context.method, "PUT");
-
-          partialDone();
-        });
-
-        const response = await fetch(
-          `http://localhost:${port}/engine.io/?transport=polling`,
-          {
-            method: "put",
-          },
-        );
-
-        assertEquals(response.status, 400);
-
-        const body = await response.json();
-        assertEquals(body.code, 2);
-        assertEquals(body.message, "Bad handshake method");
+    return setup(engine, 2, async (port, partialDone) => {
+      engine.on("connection_error", (err) => {
+        assertExists(err.req);
+        assertEquals(err.code, 2);
+        assertEquals(err.message, "Bad handshake method");
+        assertEquals(err.context.method, "PUT");
 
         partialDone();
-      },
-    );
+      });
+
+      const response = await fetch(
+        `http://localhost:${port}/engine.io/?transport=polling`,
+        {
+          method: "put",
+        },
+      );
+
+      assertEquals(response.status, 400);
+
+      const body = await response.json();
+      assertEquals(body.code, 2);
+      assertEquals(body.message, "Bad handshake method");
+
+      partialDone();
+    });
   });
 
   it("should disallow unsupported protocol versions", () => {
     const engine = new Server();
 
-    return setup(
-      engine,
-      2,
-      async (port, partialDone) => {
-        engine.on("connection_error", (err) => {
-          assertExists(err.req);
-          assertEquals(err.code, 5);
-          assertEquals(err.message, "Unsupported protocol version");
-          assertEquals(err.context.protocol, 3);
-
-          partialDone();
-        });
-
-        const response = await fetch(
-          `http://localhost:${port}/engine.io/?EIO=3&transport=polling`,
-          {
-            method: "get",
-          },
-        );
-
-        assertEquals(response.status, 400);
-
-        const body = await response.json();
-        assertEquals(body.code, 5);
-        assertEquals(body.message, "Unsupported protocol version");
+    return setup(engine, 2, async (port, partialDone) => {
+      engine.on("connection_error", (err) => {
+        assertExists(err.req);
+        assertEquals(err.code, 5);
+        assertEquals(err.message, "Unsupported protocol version");
+        assertEquals(err.context.protocol, 3);
 
         partialDone();
-      },
-    );
+      });
+
+      const response = await fetch(
+        `http://localhost:${port}/engine.io/?EIO=3&transport=polling`,
+        {
+          method: "get",
+        },
+      );
+
+      assertEquals(response.status, 400);
+
+      const body = await response.json();
+      assertEquals(body.code, 5);
+      assertEquals(body.message, "Unsupported protocol version");
+
+      partialDone();
+    });
   });
 
   it("should disallow invalid transport", () => {
@@ -299,6 +291,62 @@ describe("verification", () => {
 
         socket.onclose = done;
       };
+    });
+  });
+
+  it("should disallow transport mismatch for an existing polling session", () => {
+    const engine = new Server();
+
+    return setup(engine, 2, async (port, partialDone) => {
+      engine.on("connection_error", (err) => {
+        assertExists(err.req);
+        assertEquals(err.code, 3);
+        assertEquals(err.message, "Bad request");
+        assertEquals(err.context.name, "TRANSPORT_MISMATCH");
+        assertEquals(err.context.transport, "websocket");
+        assertEquals(err.context.previousTransport, "polling");
+
+        partialDone();
+      });
+
+      const response = await fetch(
+        `http://localhost:${port}/engine.io/?EIO=4&transport=polling`,
+        {
+          method: "get",
+        },
+      );
+
+      const body = await response.text();
+      const sid = JSON.parse(body.substring(1)).sid;
+
+      let timerId: number | undefined;
+
+      const mismatchResponse = await Promise.race([
+        fetch(
+          `http://localhost:${port}/engine.io/?EIO=4&transport=websocket&sid=${sid}`,
+          {
+            method: "get",
+          },
+        ),
+        new Promise<Response>((_, reject) => {
+          timerId = setTimeout(
+            () => reject(new Error("request timed out")),
+            200,
+          );
+        }),
+      ]);
+
+      if (timerId !== undefined) {
+        clearTimeout(timerId);
+      }
+
+      assertEquals(mismatchResponse.status, 400);
+
+      const mismatchBody = await mismatchResponse.json();
+      assertEquals(mismatchBody.code, 3);
+      assertEquals(mismatchBody.message, "Bad request");
+
+      partialDone();
     });
   });
 });

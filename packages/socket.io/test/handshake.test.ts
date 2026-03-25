@@ -174,39 +174,37 @@ describe("handshake", () => {
           assertEquals(secondConnectBody.startsWith("40/custom,{"), true);
 
           done();
-        });
+        },
+      );
     });
 
     it("should trigger a connection event (custom namespace)", () => {
       const io = new Server();
 
-      return setup(io,
-        2,
-        async (port, partialDone) => {
-          io.of("/custom").on("connection", (socket) => {
-            assertExists(socket.id);
-            partialDone();
-          });
-
-          const response = await fetch(
-            `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
-            {
-              method: "get",
-            },
-          );
-
-          assertEquals(response.status, 200);
-
-          const sid = await parseSessionID(response);
-
-          await eioPush(port, sid, "40/custom,");
-
-          const body = await eioPoll(port, sid);
-          assertEquals(body.startsWith("40/custom,{"), true);
-
+      return setup(io, 2, async (port, partialDone) => {
+        io.of("/custom").on("connection", (socket) => {
+          assertExists(socket.id);
           partialDone();
-        },
-      );
+        });
+
+        const response = await fetch(
+          `http://localhost:${port}/socket.io/?EIO=4&transport=polling`,
+          {
+            method: "get",
+          },
+        );
+
+        assertEquals(response.status, 200);
+
+        const sid = await parseSessionID(response);
+
+        await eioPush(port, sid, "40/custom,");
+
+        const body = await eioPoll(port, sid);
+        assertEquals(body.startsWith("40/custom,{"), true);
+
+        partialDone();
+      });
     });
 
     it("should trigger a connection event (dynamic namespace)", () => {
@@ -294,5 +292,5 @@ describe("handshake", () => {
         },
       );
     });
-  })
-})
+  });
+});
